@@ -1,0 +1,24 @@
+hurry.query changes
+===================
+
+0.9.2 (2006-09-22)
+------------------
+
+* First release on the cheeseshop.
+
+0.9.1 (2006-06-16)
+------------------
+
+* Make zc.catalog a dependency of hurry.query.
+
+0.9 (2006-05-16)
+----------------
+
+* Separate hurry.query from the other hurry packages. Eggification work.
+
+* Support for ValueIndex from zc.catalog.
+
+0.8 (2006-05-01)
+----------------
+
+Initial public release.
