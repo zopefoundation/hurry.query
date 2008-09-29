@@ -1,7 +1,7 @@
 hurry.query changes
 ===================
 
-0.9.3 (unreleased)
+0.9.3 (2008-09-29)
 ------------------
 
 * BUG: NotEq query no longer fails when all values in the index
