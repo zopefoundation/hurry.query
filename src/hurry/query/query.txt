@@ -319,6 +319,12 @@ efficient than the generic ``~`` operator:
   >>> displayQuery(value.NotEq(f1, 'a'))
   [2, 3, 4, 5]
 
+If all the items in the catalog satisfy the NotEq condition, the query
+does not crash.
+
+  >>> displayQuery(value.NotEq(f1, 'z'))
+  [1, 2, 3, 4, 5, 6]
+
 You can also query for all objects where the value of ``f1`` is in a set of
 values:
 

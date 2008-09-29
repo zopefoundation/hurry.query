@@ -38,7 +38,14 @@ class NotEq(ValueTerm):
     def apply(self):
         index = self.getIndex()
         values = list(index.values())
-        values.remove(self.not_value)
+        # the remove method produces a value error when the value to
+        # be removed is not in the list in the first place.  Having a
+        # try/except clause is more efficent than first searching the
+        # list for the value to remove.
+        try:
+            values.remove(self.not_value)
+        except ValueError:
+            pass
         return index.apply({'any_of': values})
 
 class Between(ValueTerm):
