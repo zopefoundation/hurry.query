@@ -13,7 +13,7 @@
 ##############################################################################
 """Setup
 
-$Id: setup.py 91011 2008-09-09 22:01:02Z malthe $
+$Id$
 """
 import os
 from setuptools import setup, find_packages
@@ -25,16 +25,15 @@ def read(*rnames):
 
 setup(
     name="hurry.query",
-    version="0.9.3",
+    version="1.0.0dev",
     author='Infrae',
     author_email='faassen@startifact.com',
-    description="""\
-hurry.query is a higher level query system built on top of the Zope 3
-catalogs. It makes it easy to perform catalog queries in Zope 3 code.
-""",
-    long_description=read('src','hurry','query','query.txt'),
+    description="Higher level query system for the zope.catalog",
+    long_description=read('src','hurry','query','query.txt') +
+                     '\n\n' +
+                     read('CHANGES.txt'),
     license='ZPL 2.1',
-    keywords="zope zope3 query",
+    keywords="zope zope3 catalog index query",
     classifiers = [
         'Development Status :: 5 - Production/Stable',
         'Environment :: Web Environment',
@@ -56,6 +55,12 @@ catalogs. It makes it easy to perform catalog queries in Zope 3 code.
 
     zip_safe=False,
     install_requires=[
-    'zc.catalog >= 0.1.1',
-    'setuptools'],
+        'setuptools',
+        'zc.catalog',
+        'ZODB3',
+        'zope.catalog',
+        'zope.component',
+        'zope.interface',
+        'zope.intid',
+        ],
     )

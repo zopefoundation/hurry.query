@@ -1,5 +1,15 @@
-hurry.query changes
-===================
+CHANGES
+=======
+
+1.0.0 (unreleased)
+------------------
+
+* Refresh dependencies. Use zope.catalog and zope.intid instead of
+  zope.app.catalog and zope.app.intid respectively. Don't zope.app.zapi.
+
+* Make package description more modern.
+
+* Clean up the code style.
 
 0.9.3 (2008-09-29)
 ------------------

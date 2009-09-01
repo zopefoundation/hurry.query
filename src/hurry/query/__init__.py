@@ -1,6 +1,6 @@
 ##############################################################################
 #
-# Copyright (c) 2005-2008 Zope Corporation and Contributors.
+# Copyright (c) 2005-2009 Zope Corporation and Contributors.
 # All Rights Reserved.
 #
 # This software is subject to the provisions of the Zope Public License,
@@ -11,5 +11,7 @@
 # FOR A PARTICULAR PURPOSE.
 #
 ##############################################################################
-
-from query import And, Or, Eq, NotEq, Between, In, Ge, Le, Text
+"""
+$Id$
+"""
+from hurry.query.query import And, Or, Eq, NotEq, Between, In, Ge, Le, Text

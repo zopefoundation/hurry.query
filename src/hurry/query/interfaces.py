@@ -1,6 +1,6 @@
 ##############################################################################
 #
-# Copyright (c) 2005-2008 Zope Corporation and Contributors.
+# Copyright (c) 2005-2009 Zope Corporation and Contributors.
 # All Rights Reserved.
 #
 # This software is subject to the provisions of the Zope Public License,
@@ -11,13 +11,16 @@
 # FOR A PARTICULAR PURPOSE.
 #
 ##############################################################################
+"""
+$Id$
+"""
 
 from zope.interface import Interface
 
 class IQuery(Interface):
+
     def searchResults(query):
         """Query indexes.
 
         Argument is a query composed of terms.
         """
-

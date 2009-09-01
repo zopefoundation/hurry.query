@@ -11,17 +11,24 @@
 # FOR A PARTICULAR PURPOSE.
 #
 ##############################################################################
-
+"""
+$Id$
+"""
 from zc.catalog.interfaces import IValueIndex
+
 from hurry.query import query
 
+
 class ValueTerm(query.IndexTerm):
+
     def getIndex(self):
         index = super(ValueTerm, self).getIndex()
         assert IValueIndex.providedBy(index)
         return index
 
+
 class Eq(ValueTerm):
+
     def __init__(self, index_id, value):
         assert value is not None
         super(Eq, self).__init__(index_id)
@@ -30,7 +37,9 @@ class Eq(ValueTerm):
     def apply(self):
         return self.getIndex().apply({'any_of': (self.value,)})
 
+
 class NotEq(ValueTerm):
+
     def __init__(self, index_id, not_value):
         super(NotEq, self).__init__(index_id)
         self.not_value = not_value
@@ -48,7 +57,9 @@ class NotEq(ValueTerm):
             pass
         return index.apply({'any_of': values})
 
+
 class Between(ValueTerm):
+
     def __init__(self, index_id, min_value=None, max_value=None,
                  exclude_min=False, exclude_max=False):
         super(Between, self).__init__(index_id)
@@ -62,15 +73,21 @@ class Between(ValueTerm):
             {'between': (self.min_value, self.max_value,
                          self.exclude_min, self.exclude_max)})
 
+
 class Ge(Between):
+
     def __init__(self, index_id, min_value):
         super(Ge, self).__init__(index_id, min_value=min_value)
 
+
 class Le(Between):
+
     def __init__(self, index_id, max_value):
         super(Le, self).__init__(index_id, max_value=max_value)
 
+
 class In(ValueTerm):
+
     def __init__(self, index_id, values):
         assert None not in values
         super(In, self).__init__(index_id)
@@ -79,9 +96,10 @@ class In(ValueTerm):
     def apply(self):
         return self.getIndex().apply({'any_of': self.values})
 
+
 class ExtentAny(ValueTerm):
-    """Any ids in the extent that are indexed by this index.
-    """
+    """Any ids in the extent that are indexed by this index."""
+
     def __init__(self, index_id, extent):
         super(ExtentAny, self).__init__(index_id)
         self.extent = extent
@@ -89,9 +107,10 @@ class ExtentAny(ValueTerm):
     def apply(self):
         return self.getIndex().apply({'any': self.extent})
 
+
 class ExtentNone(ValueTerm):
-    """Any ids in the extent that are not indexed by this index.
-    """
+    """Any ids in the extent that are not indexed by this index."""
+
     def __init__(self, index_id, extent):
         super(ExtentNone, self).__init__(index_id)
         self.extent = extent

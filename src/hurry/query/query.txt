@@ -1,10 +1,12 @@
 Hurry Query
 ===========
 
-The hurry query system for the Zope 3 catalog builds on catalog
-indexes as defined in Zope 3 core, as well as the indexes in
-zc.catalog. It is in part inspired by AdvancedQuery for Zope 2 by
-Dieter Maurer, though has an independent origin.
+The hurry query system for the zope.catalog builds on its catalog
+indexes, as well as the indexes in zc.catalog. It is in part inspired
+by AdvancedQuery for Zope 2 by Dieter Maurer, though has an independent
+origin.
+
+.. contents::
 
 Setup
 -----
@@ -22,7 +24,7 @@ Let's define a simple content object. First its interface::
 
 And its implementation::
 
-  >>> from zope.app.container.contained import Contained
+  >>> from zope.container.contained import Contained
   >>> class Content(Contained):
   ...     implements(IContent)
   ...     def __init__(self, id, f1='', f2='', f3='', f4='', t1='', t2=''):
@@ -44,10 +46,9 @@ We use a fake int id utility here so we can test independent of
 the full-blown zope environment::
 
   >>> from zope import interface
-  >>> import zope.app.intid.interfaces
-  >>> from zope.app.testing import ztapi
+  >>> import zope.intid.interfaces
   >>> class DummyIntId(object):
-  ...     interface.implements(zope.app.intid.interfaces.IIntIds)
+  ...     interface.implements(zope.intid.interfaces.IIntIds)
   ...     MARKER = '__dummy_int_id__'
   ...     def __init__(self):
   ...         self.counter = 0
@@ -65,20 +66,20 @@ the full-blown zope environment::
   ...     def __iter__(self):
   ...         return iter(self.data)
   >>> intid = DummyIntId()
-  >>> ztapi.provideUtility(
-  ...     zope.app.intid.interfaces.IIntIds, intid)
+  >>> from zope.component import provideUtility
+  >>> provideUtility(intid, zope.intid.interfaces.IIntIds)
 
 Now let's register a catalog::
 
-  >>> from zope.app.catalog.interfaces import ICatalog
-  >>> from zope.app.catalog.catalog import Catalog
+  >>> from zope.catalog.interfaces import ICatalog
+  >>> from zope.catalog.catalog import Catalog
   >>> catalog = Catalog()
-  >>> ztapi.provideUtility(ICatalog, catalog, 'catalog1')
+  >>> provideUtility(catalog, ICatalog, 'catalog1')
 
 And set it up with various indexes::
 
-  >>> from zope.app.catalog.field import FieldIndex
-  >>> from zope.app.catalog.text import TextIndex
+  >>> from zope.catalog.field import FieldIndex
+  >>> from zope.catalog.text import TextIndex
   >>> catalog['f1'] = FieldIndex('f1', IContent)
   >>> catalog['f2'] = FieldIndex('f2', IContent)
   >>> catalog['f3'] = FieldIndex('f3', IContent)
@@ -105,15 +106,15 @@ Now let's register a query utility::
 
   >>> from hurry.query.query import Query
   >>> from hurry.query.interfaces import IQuery
-  >>> ztapi.provideUtility(IQuery, Query())
+  >>> provideUtility(Query(), IQuery)
 
 Set up some code to make querying and display the result
 easy::
 
-  >>> from zope.app import zapi
+  >>> from zope.component import getUtility
   >>> from hurry.query.interfaces import IQuery
   >>> def displayQuery(q):
-  ...     query = zapi.getUtility(IQuery)
+  ...     query = getUtility(IQuery)
   ...     r = query.searchResults(q)
   ...     return [e.id for e in sorted(list(r))]
 
@@ -216,12 +217,11 @@ The SetIndex is defined in zc.catalog. Let's make a catalog which uses
 it::
 
   >>> intid = DummyIntId()
-  >>> ztapi.provideUtility(
-  ...     zope.app.intid.interfaces.IIntIds, intid)
-  >>> from zope.app.catalog.interfaces import ICatalog
-  >>> from zope.app.catalog.catalog import Catalog
+  >>> provideUtility(intid, zope.intid.interfaces.IIntIds)
+  >>> from zope.catalog.interfaces import ICatalog
+  >>> from zope.catalog.catalog import Catalog
   >>> catalog = Catalog()
-  >>> ztapi.provideUtility(ICatalog, catalog, 'catalog1')
+  >>> provideUtility(catalog, ICatalog, 'catalog1')
   >>> from zc.catalog.catalogindex import SetIndex
   >>> catalog['f1'] = SetIndex('f1', IContent)
   >>> catalog['f2'] = FieldIndex('f2', IContent)
@@ -281,12 +281,12 @@ Let's set up a catalog that uses this index. The ``ValueIndex`` is defined in
 ``zc.catalog``. Let's make a catalog which uses it:
 
   >>> intid = DummyIntId()
-  >>> ztapi.provideUtility(zope.app.intid.interfaces.IIntIds, intid)
+  >>> provideUtility(intid, zope.intid.interfaces.IIntIds)
 
-  >>> from zope.app.catalog.interfaces import ICatalog
-  >>> from zope.app.catalog.catalog import Catalog
+  >>> from zope.catalog.interfaces import ICatalog
+  >>> from zope.catalog.catalog import Catalog
   >>> catalog = Catalog()
-  >>> ztapi.provideUtility(ICatalog, catalog, 'catalog1')
+  >>> provideUtility(catalog, ICatalog, 'catalog1')
 
   >>> from zc.catalog.catalogindex import ValueIndex
   >>> catalog['f1'] = ValueIndex('f1', IContent)
