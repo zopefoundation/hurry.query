@@ -11,7 +11,11 @@
 # FOR A PARTICULAR PURPOSE.
 #
 ##############################################################################
-"""
+"""Basic query implementation
+
+This module contains an IQuery utility implementation, basic query term
+implementations and concrete term implementations for zope.catalog indexes.
+
 $Id$
 """
 from BTrees.IFBTree import weightedIntersection, union, difference, IFBTree

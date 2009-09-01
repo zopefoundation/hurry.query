@@ -11,7 +11,8 @@
 # FOR A PARTICULAR PURPOSE.
 #
 ##############################################################################
-"""
+"""Query terms for zc.catalog's SetIndex
+
 $Id$
 """
 from zc.catalog.interfaces import ISetIndex
