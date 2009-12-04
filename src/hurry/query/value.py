@@ -22,8 +22,8 @@ from hurry.query import query
 
 class ValueTerm(query.IndexTerm):
 
-    def getIndex(self):
-        index = super(ValueTerm, self).getIndex()
+    def getIndex(self, context):
+        index = super(ValueTerm, self).getIndex(context)
         assert IValueIndex.providedBy(index)
         return index
 
@@ -35,8 +35,8 @@ class Eq(ValueTerm):
         super(Eq, self).__init__(index_id)
         self.value = value
 
-    def apply(self):
-        return self.getIndex().apply({'any_of': (self.value,)})
+    def apply(self, context=None):
+        return self.getIndex(context).apply({'any_of': (self.value,)})
 
 
 class NotEq(ValueTerm):
@@ -45,8 +45,8 @@ class NotEq(ValueTerm):
         super(NotEq, self).__init__(index_id)
         self.not_value = not_value
 
-    def apply(self):
-        index = self.getIndex()
+    def apply(self, context=None):
+        index = self.getIndex(context)
         values = list(index.values())
         # the remove method produces a value error when the value to
         # be removed is not in the list in the first place.  Having a
@@ -69,8 +69,8 @@ class Between(ValueTerm):
         self.exclude_min = exclude_min
         self.exclude_max = exclude_max
 
-    def apply(self):
-        return self.getIndex().apply(
+    def apply(self, context=None):
+        return self.getIndex(context).apply(
             {'between': (self.min_value, self.max_value,
                          self.exclude_min, self.exclude_max)})
 
@@ -94,8 +94,8 @@ class In(ValueTerm):
         super(In, self).__init__(index_id)
         self.values = values
 
-    def apply(self):
-        return self.getIndex().apply({'any_of': self.values})
+    def apply(self, context=None):
+        return self.getIndex(context).apply({'any_of': self.values})
 
 
 class ExtentAny(ValueTerm):
@@ -105,8 +105,8 @@ class ExtentAny(ValueTerm):
         super(ExtentAny, self).__init__(index_id)
         self.extent = extent
 
-    def apply(self):
-        return self.getIndex().apply({'any': self.extent})
+    def apply(self, context=None):
+        return self.getIndex(context).apply({'any': self.extent})
 
 
 class ExtentNone(ValueTerm):
@@ -116,5 +116,5 @@ class ExtentNone(ValueTerm):
         super(ExtentNone, self).__init__(index_id)
         self.extent = extent
 
-    def apply(self):
-        return self.getIndex().apply({'none': self.extent})
+    def apply(self, context=None):
+        return self.getIndex(context).apply({'none': self.extent})

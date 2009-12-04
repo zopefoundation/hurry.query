@@ -22,8 +22,8 @@ from hurry.query import query
 
 class SetTerm(query.IndexTerm):
 
-    def getIndex(self):
-        index = super(SetTerm, self).getIndex()
+    def getIndex(self, context):
+        index = super(SetTerm, self).getIndex(context)
         assert ISetIndex.providedBy(index)
         return index
 
@@ -34,8 +34,8 @@ class AnyOf(SetTerm):
         super(AnyOf, self).__init__(index_id)
         self.values = values
 
-    def apply(self):
-        return self.getIndex().apply({'any_of': self.values})
+    def apply(self, context=None):
+        return self.getIndex(context).apply({'any_of': self.values})
 
 
 class AllOf(SetTerm):
@@ -44,8 +44,8 @@ class AllOf(SetTerm):
         super(AllOf, self).__init__(index_id)
         self.values = values
 
-    def apply(self):
-        return self.getIndex().apply({'all_of': self.values})
+    def apply(self, context=None):
+        return self.getIndex(context).apply({'all_of': self.values})
 
 
 class SetBetween(SetTerm):
@@ -56,8 +56,8 @@ class SetBetween(SetTerm):
         super(SetBetween, self).__init__(index_id)
         self.tuple = (minimum, maximum, include_minimum, include_maximum)
 
-    def apply(self):
-        return self.getIndex().apply({'between': self.tuple})
+    def apply(self, context=None):
+        return self.getIndex(context).apply({'between': self.tuple})
 
 
 class ExtentAny(SetTerm):
@@ -67,8 +67,8 @@ class ExtentAny(SetTerm):
         super(Any, self).__init__(index_id)
         self.extent = extent
 
-    def apply(self):
-        return self.getIndex().apply({'any': self.extent})
+    def apply(self, context=None):
+        return self.getIndex(context).apply({'any': self.extent})
 
 
 class ExtentNone(SetTerm):
@@ -78,5 +78,5 @@ class ExtentNone(SetTerm):
         super(None, self).__init__(index_id)
         self.extent = extent
 
-    def apply(self):
-        return self.getIndex().apply({'none': self.extent})
+    def apply(self, context=None):
+        return self.getIndex(context).apply({'none': self.extent})

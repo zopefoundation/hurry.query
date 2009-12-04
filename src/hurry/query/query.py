@@ -34,10 +34,10 @@ from hurry.query import interfaces
 class Query(object):
     implements(interfaces.IQuery)
 
-    def searchResults(self, query):
-        results = query.apply()
+    def searchResults(self, query, context=None):
+        results = query.apply(context)
         if results is not None:
-            uidutil = getUtility(IIntIds)
+            uidutil = getUtility(IIntIds, '', context)
             results = ResultSet(results, uidutil)
         return results
 
@@ -65,10 +65,10 @@ class And(Term):
     def __init__(self, *terms):
         self.terms = terms
 
-    def apply(self):
+    def apply(self, context=None):
         results = []
         for term in self.terms:
-            r = term.apply()
+            r = term.apply(context)
             if not r:
                 # empty results
                 return r
@@ -92,10 +92,10 @@ class Or(Term):
     def __init__(self, *terms):
         self.terms = terms
 
-    def apply(self):
+    def apply(self, context=None):
         results = []
         for term in self.terms:
-            r = term.apply()
+            r = term.apply(context)
             # empty results
             if not r:
                 continue
@@ -117,8 +117,8 @@ class Not(Term):
     def __init__(self, term):
         self.term = term
 
-    def apply(self):
-        return difference(self._all(), self.term.apply())
+    def apply(self, context=None):
+        return difference(self._all(), self.term.apply(context))
 
     def _all(self):
         # XXX may not work well/be efficient with extentcatalog
@@ -137,8 +137,8 @@ class IndexTerm(Term):
         self.catalog_name = catalog_name
         self.index_name = index_name
 
-    def getIndex(self):
-        catalog = getUtility(ICatalog, self.catalog_name)
+    def getIndex(self, context):
+        catalog = getUtility(ICatalog, self.catalog_name, context)
         index = catalog[self.index_name]
         return index
 
@@ -149,20 +149,20 @@ class Text(IndexTerm):
         super(Text, self).__init__(index_id)
         self.text = text
 
-    def getIndex(self):
-        index = super(Text, self).getIndex()
+    def getIndex(self, context):
+        index = super(Text, self).getIndex(context)
         assert ITextIndex.providedBy(index)
         return index
 
-    def apply(self):
-        index = self.getIndex()
+    def apply(self, context=None):
+        index = self.getIndex(context)
         return index.apply(self.text)
 
 
 class FieldTerm(IndexTerm):
 
-    def getIndex(self):
-        index = super(FieldTerm, self).getIndex()
+    def getIndex(self, context):
+        index = super(FieldTerm, self).getIndex(context)
         assert IFieldIndex.providedBy(index)
         return index
 
@@ -174,8 +174,8 @@ class Eq(FieldTerm):
         super(Eq, self).__init__(index_id)
         self.value = value
 
-    def apply(self):
-        return self.getIndex().apply((self.value, self.value))
+    def apply(self, context=None):
+        return self.getIndex(context).apply((self.value, self.value))
 
 
 class NotEq(FieldTerm):
@@ -184,8 +184,8 @@ class NotEq(FieldTerm):
         super(NotEq, self).__init__(index_id)
         self.not_value = not_value
 
-    def apply(self):
-        index = self.getIndex()
+    def apply(self, context=None):
+        index = self.getIndex(context)
         all = index.apply((None, None))
         r = index.apply((self.not_value, self.not_value))
         return difference(all, r)
@@ -198,8 +198,8 @@ class Between(FieldTerm):
         self.min_value = min_value
         self.max_value = max_value
 
-    def apply(self):
-        return self.getIndex().apply((self.min_value, self.max_value))
+    def apply(self, context=None):
+        return self.getIndex(context).apply((self.min_value, self.max_value))
 
 
 class Ge(Between):
@@ -221,9 +221,9 @@ class In(FieldTerm):
         super(In, self).__init__(index_id)
         self.values = values
 
-    def apply(self):
+    def apply(self, context=None):
         results = []
-        index = self.getIndex()
+        index = self.getIndex(context)
         for value in self.values:
             r = index.apply((value, value))
             # empty results

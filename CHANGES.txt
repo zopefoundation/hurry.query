@@ -4,8 +4,9 @@ CHANGES
 1.0.1 (unreleased)
 ------------------
 
-- Nothing changed yet.
-
+* Allow the searchResults method of a Query object to take an additional
+  optional context argument. This context will determine which catalog
+  the search is performed on.
 
 1.0.0 (2009-11-30)
 ------------------

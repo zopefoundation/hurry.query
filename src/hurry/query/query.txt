@@ -113,9 +113,9 @@ easy::
 
   >>> from zope.component import getUtility
   >>> from hurry.query.interfaces import IQuery
-  >>> def displayQuery(q):
+  >>> def displayQuery(q, context=None):
   ...     query = getUtility(IQuery)
-  ...     r = query.searchResults(q)
+  ...     r = query.searchResults(q, context)
   ...     return [e.id for e in sorted(list(r))]
 
 FieldIndex Queries
@@ -397,3 +397,45 @@ extent that are *not* in the index:
 
   >>> displayQuery(value.ExtentNone(f1, extent))
   [7, 8, 9]
+
+
+Querying different indexes
+--------------------------
+
+It's possible to specify the context when creating a query. This context
+determines which index will be searched.
+
+First setup a second registry and second catalog and populate it.
+
+  >>> catalog2 = Catalog()
+  >>> from zope.component.registry import Components
+  >>> import zope.component.interfaces
+  >>> import zope.interface
+  >>> intid1 = DummyIntId()
+  >>> class MockSite(object):
+  ...     zope.interface.implements(zope.component.interfaces.IComponentLookup)
+  ...     def __init__(self):
+  ...         self.registry = Components('components')
+  ...     def queryUtility(self, interface, name='', default=None):
+  ...         if name == '': return intid1
+  ...         else: return catalog2
+  ...     def getSiteManager(self):
+  ...         return self.registry
+  >>> from zope.component.hooks import setSite
+  >>> site1 = MockSite()
+  >>> setSite(site1)
+  >>> catalog2['f1'] = FieldIndex('f1', IContent)
+  >>> content = [
+  ... Content(1,'A'),
+  ... Content(2,'B'),]
+  >>> for entry in content:
+  ...     catalog2.index_doc(intid1.register(entry), entry)
+
+Now we can query this catalog by specifying the context:
+
+  >>> query = getUtility(IQuery)
+  >>> displayQuery(Eq(f1, 'A'), context=site1)
+  [1]
+
+  >>> displayQuery(In(f1, ['A', 'B']), context=site1)
+  [1, 2]
