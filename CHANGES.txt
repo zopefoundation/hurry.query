@@ -1,8 +1,16 @@
 CHANGES
 =======
 
-1.0.1 (unreleased)
+1.1.0 (unreleased)
 ------------------
+
+* Allow the searchResults method of a Query to take an additional keyword
+  argument `sort_field` that defines that defines (catalog_name, index_name) to
+  sort on. That index in that catalog should implement IIndexSort.
+
+  In addition to this keyword argument, `limit` and `reverse` keyword arguments
+  can be passed too, that will limit the sorted resultset and/or reverse its
+  order.
 
 * Allow the searchResults method of a Query object to take an additional
   optional context argument. This context will determine which catalog

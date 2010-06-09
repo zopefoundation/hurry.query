@@ -26,7 +26,7 @@ from zope.catalog.text import ITextIndex
 from zope.component import getUtility
 from zope.interface import implements
 from zope.intid.interfaces import IIntIds
-
+from zope.index.interfaces import IIndexSort
 from hurry.query import interfaces
 
 # XXX look into using multiunion for performance?
@@ -34,12 +34,27 @@ from hurry.query import interfaces
 class Query(object):
     implements(interfaces.IQuery)
 
-    def searchResults(self, query, context=None):
+    def searchResults(
+        self, query, context=None, sort_field=None, limit=None, reverse=False):
+
         results = query.apply(context)
-        if results is not None:
-            uidutil = getUtility(IIntIds, '', context)
-            results = ResultSet(results, uidutil)
-        return results
+        if results is None:
+            return
+
+        if sort_field is not None:
+            catalog_name, index_name = sort_field
+            catalog = getUtility(ICatalog, catalog_name, context)
+            index = catalog[index_name]
+            if not IIndexSort.providedBy(index):
+                raise ValueError(
+                    'Index %s in catalog %s does not support '
+                    'sorting.' % (index_name, catalog_name))
+            results = list(index.sort(results, limit=limit, reverse=reverse))
+        # Note: in case no sort_field is provided, the resultset order
+        # is undefined. As such limiting and reverse does not have any
+        # practical meaning.
+        uidutil = getUtility(IIntIds, '', context)
+        return ResultSet(results, uidutil)
 
 
 class Term(object):

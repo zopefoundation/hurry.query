@@ -439,3 +439,79 @@ Now we can query this catalog by specifying the context:
 
   >>> displayQuery(In(f1, ['A', 'B']), context=site1)
   [1, 2]
+
+Sorting and limiting the resultset
+----------------------------------
+
+It's possible to have the resultset sorted on one of the fields in the query.
+
+  >>> catalog = Catalog()
+  >>> provideUtility(catalog, ICatalog, 'catalog1')
+  >>> catalog['f1'] = FieldIndex('f1', IContent)
+  >>> catalog['f2'] = FieldIndex('f2', IContent)
+  >>> catalog['t'] = TextIndex('t1', IContent)
+
+First let's set up some new data::
+
+  >>> content = [
+  ... Content(1, 'a', 2, t1='Beautiful is better than ugly.'),
+  ... Content(2, 'a', 3, t1='Explicit is better than implicit'),
+  ... Content(3, 'b', 9, t1='Simple is better than complex'),
+  ... Content(4, 'c', 8, t1='Complex is better than complicated'),
+  ... Content(5, 'c', 7, t1='Readability counts'),
+  ... Content(6, 'a', 1, t1='Although practicality beats purity')]
+
+And catalog them now::
+
+  >>> for entry in content:
+  ...     catalog.index_doc(intid.register(entry), entry)
+
+Define a convenience function for quickly displaying a result set without
+performing any sorting here ourselves.
+
+  >>> def displayResult(q, context=None, **kw):
+  ...     query = getUtility(IQuery)
+  ...     r = query.searchResults(q, context, **kw)
+  ...     return [e.id for e in r]
+
+
+Without using sorting in the query itself, the resultset has an undefined
+order. We "manually" sort the results here to have something testable.
+
+  >>> f1 = ('catalog1', 'f1')
+  >>> [r for r in sorted(displayResult(Eq(f1, 'a')))]
+  [1, 2, 6]
+
+Now we sort on the f2 index.
+
+  >>> f1 = ('catalog1', 'f1')
+  >>> displayResult(Eq(f1, 'a'), sort_field=('catalog1', 'f2'))
+  [6, 1, 2]
+
+Reverse the order.
+
+  >>> f1 = ('catalog1', 'f1')
+  >>> displayResult(Eq(f1, 'a'), sort_field=('catalog1', 'f2'), reverse=True)
+  [2, 1, 6]
+
+We can limit the amount of found items.
+
+  >>> f1 = ('catalog1', 'f1')
+  >>> displayResult(Eq(f1, 'a'), sort_field=('catalog1', 'f2'), limit=2)
+  [6, 1]
+
+We can limit the reversed resultset too.
+
+  >>> f1 = ('catalog1', 'f1')
+  >>> displayResult(
+  ...   Eq(f1, 'a'), sort_field=('catalog1', 'f2'), limit=2, reverse=True)
+  [2, 1]
+
+Whenever a field is used for sorting that does not support is, an error is
+raised.
+
+  >>> f1 = ('catalog1', 'f1')
+  >>> displayResult(Eq(f1, 'a'), sort_field=('catalog1', 't'))
+  Traceback (most recent call last):
+  ...
+  ValueError: Index t in catalog catalog1 does not support sorting.
