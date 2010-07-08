@@ -474,7 +474,6 @@ performing any sorting here ourselves.
   ...     r = query.searchResults(q, context, **kw)
   ...     return [e.id for e in r]
 
-
 Without using sorting in the query itself, the resultset has an undefined
 order. We "manually" sort the results here to have something testable.
 
@@ -515,3 +514,16 @@ raised.
   Traceback (most recent call last):
   ...
   ValueError: Index t in catalog catalog1 does not support sorting.
+
+The resultset can still be reversed and limited even if there's no sort_field
+given (Note that the actual order of the result set when not using explicit
+sorting is not defined. In this test it is assumed that the natural order of
+the tested index is deterministic enough to be used as a proper test).
+
+  >>> f1 = ('catalog1', 'f1')
+  >>> displayResult(Eq(f1, 'a'), limit=2)
+  [1, 2]
+
+  >>> f1 = ('catalog1', 'f1')
+  >>> displayResult(Eq(f1, 'a'), limit=2, reverse=True)
+  [6, 2]

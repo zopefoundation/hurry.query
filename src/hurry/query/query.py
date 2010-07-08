@@ -42,6 +42,9 @@ class Query(object):
             return
 
         if sort_field is not None:
+            # Like in zope.catalog's searchResults we require the given
+            # index to sort on to provide IIndexSort. We bail out if
+            # the index does not.
             catalog_name, index_name = sort_field
             catalog = getUtility(ICatalog, catalog_name, context)
             index = catalog[index_name]
@@ -50,9 +53,17 @@ class Query(object):
                     'Index %s in catalog %s does not support '
                     'sorting.' % (index_name, catalog_name))
             results = list(index.sort(results, limit=limit, reverse=reverse))
-        # Note: in case no sort_field is provided, the resultset order
-        # is undefined. As such limiting and reverse does not have any
-        # practical meaning.
+        else:
+            # There's no sort_field given. We still allow to reverse
+            # and/or limit the resultset. This mimics zope.catalog's
+            # searchResults semantics.
+            if reverse or limit:
+                results = list(results)
+            if reverse:
+                results.reverse()
+            if limit:
+                del results[limit:]
+
         uidutil = getUtility(IIntIds, '', context)
         return ResultSet(results, uidutil)
 
