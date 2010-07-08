@@ -20,8 +20,22 @@ from zope.interface import Interface
 
 class IQuery(Interface):
 
-    def searchResults(query):
+    def searchResults(
+        query, context=None, sort_field=None, limit=None, reverse=False):
+
         """Query indexes.
 
-        Argument is a query composed of terms.
+        The query argument is a query composed of terms. Optionally provide
+        the `context` parameter for the component lookups.
+
+        Optionally provide a `sort_field` tuple that determines the index used
+        to sort the result set with. This index is required to provide
+        IIndexSort.
+
+        Optionally provide a `limit` parameter to limit the result set to the
+        given size.
+
+        Optionally provide a `reverse` parameter to reverse the order of the
+        result set.
+
         """
