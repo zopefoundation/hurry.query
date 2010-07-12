@@ -23,6 +23,10 @@ def read(*rnames):
     text = unicode(text, 'utf-8').encode('ascii', 'xmlcharrefreplace')
     return text
 
+tests_require = [
+    'zope.testing',
+    ]
+
 setup(
     name="hurry.query",
     version = '1.1.0dev',
@@ -63,4 +67,6 @@ setup(
         'zope.interface',
         'zope.intid',
         ],
+    tests_require = tests_require,
+    extras_require = {'test': tests_require},
     )
