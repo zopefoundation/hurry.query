@@ -1,7 +1,7 @@
 CHANGES
 =======
 
-1.1.1 (unreleased)
+1.1.1 (2012-06-22)
 ------------------
 
 * ExtentNone in set.py missed a parameter ``index_id``. Thanks to Danilo
