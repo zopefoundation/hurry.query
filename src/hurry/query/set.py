@@ -74,7 +74,7 @@ class ExtentAny(SetTerm):
 class ExtentNone(SetTerm):
     """Any ids in the extent that are not indexed by this index."""
 
-    def __init__(self, extent):
+    def __init__(self, index_id, extent):
         super(None, self).__init__(index_id)
         self.extent = extent
 
