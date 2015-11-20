@@ -121,6 +121,13 @@ easy::
 FieldIndex Queries
 ------------------
 
+We can query for all objects indexed in this index::
+
+  >>> from hurry.query import All
+  >>> f1 = ('catalog1', 'f1')
+  >>> displayQuery(All(f1))
+  [1, 2, 3, 4, 5, 6]
+
 Now for a query where f1 equals a::
 
   >>> from hurry.query import Eq
@@ -234,12 +241,20 @@ First let's set up some new data::
   ... Content(3, ['b'], 1),
   ... Content(4, ['c', 'd'], 2),
   ... Content(5, ['b', 'c'], 2),
-  ... Content(6, ['a', 'c'], 2)]
+  ... Content(6, ['a', 'c'], 2),
+  ... Content(7, ['z'], 2),
+  ... Content(8, [], 2)]  # no value, so not indexed.
 
 And catalog them now::
 
   >>> for entry in content:
   ...     catalog.index_doc(intid.register(entry), entry)
+
+We can query for all indexes objects:
+
+  >>> from hurry.query.set import All
+  >>> displayQuery(All(f1))
+  [1, 2, 3, 4, 5, 6, 7]
 
 Now do a a 'any of' query, which returns all documents that
 contain any of the values listed::
@@ -306,6 +321,11 @@ And catalog them now:
   >>> for entry in content:
   ...     catalog.index_doc(intid.register(entry), entry)
 
+We query for all indexes objects::
+
+  >>> f1 = ('catalog1', 'f1')
+  >>> displayQuery(value.All(f1))
+  [1, 2, 3, 4, 5, 6]
 
 Let's now query for all objects where ``f1`` equals 'a':
 

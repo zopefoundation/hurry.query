@@ -59,6 +59,12 @@ class NotEq(ValueTerm):
         return index.apply({'any_of': values})
 
 
+class All(ValueTerm):
+
+    def apply(self, context=None):
+        return self.getIndex(context).apply({'any': None})
+
+
 class Between(ValueTerm):
 
     def __init__(self, index_id, min_value=None, max_value=None,
