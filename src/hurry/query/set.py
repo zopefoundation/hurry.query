@@ -28,6 +28,12 @@ class SetTerm(query.IndexTerm):
         return index
 
 
+class All(SetTerm):
+
+    def apply(self, context=None):
+        return self.getIndex(context).apply({'any': None})
+
+
 class AnyOf(SetTerm):
 
     def __init__(self, index_id, values):

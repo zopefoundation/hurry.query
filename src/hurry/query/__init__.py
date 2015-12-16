@@ -14,4 +14,5 @@
 """
 $Id$
 """
-from hurry.query.query import And, Or, Eq, NotEq, Between, In, Ge, Le, Text
+from hurry.query.query import All, And, Or, Eq, NotEq
+from hurry.query.query import Between, In, Ge, Le, Text
