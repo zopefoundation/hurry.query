@@ -217,6 +217,12 @@ class NotEq(FieldTerm):
         return difference(all, r)
 
 
+class All(FieldTerm):
+
+    def apply(self, context=None):
+        return self.getIndex(context).apply((None, None))
+
+
 class Between(FieldTerm):
 
     def __init__(self, index_id, min_value, max_value):
