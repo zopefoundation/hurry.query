@@ -101,7 +101,7 @@ class Query(object):
             # searchResults semantics.
             if limit or start:
                 selected_results = itertools.islice(
-                    all_results, start, limit)
+                    all_results, start, start + limit)
                 is_iterator = True
             else:
                 selected_results = all_results
@@ -207,6 +207,7 @@ class Not(Term):
 class Except(Term):
 
     def __init__(self, term, *exceptions):
+        # XXX Support other terms as exceptions as well.
         self.term = term
         self.exceptions = exceptions
 
