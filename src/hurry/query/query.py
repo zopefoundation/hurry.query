@@ -18,8 +18,10 @@ implementations and concrete term implementations for zope.catalog indexes.
 
 $Id$
 """
+import itertools
+
 from BTrees.IFBTree import weightedIntersection, union, difference, IFBTree
-from zope.catalog.catalog import ResultSet
+from zope.cachedescriptors.property import Lazy
 from zope.catalog.field import IFieldIndex
 from zope.catalog.interfaces import ICatalog
 from zope.catalog.text import ITextIndex
@@ -31,16 +33,46 @@ from hurry.query import interfaces
 
 # XXX look into using multiunion for performance?
 
+
+class QueryResults(object):
+
+    def __init__(self, context, all_results, selected_results):
+        self.context = context
+        self.__all = all_results
+        self.__selected = selected_results
+
+    @Lazy
+    def get(self):
+        return getUtility(IIntIds, '', self.context).getObject
+
+    @property
+    def total(self):
+        return len(self.__all)
+
+    @property
+    def count(self):
+        return len(self.__selected)
+
+    def __len__(self):
+        return len(self.__selected)
+
+    def __iter__(self):
+        for uid in self.__selected:
+            yield self.get(uid)
+
+
 class Query(object):
     implements(interfaces.IQuery)
 
     def searchResults(
-        self, query, context=None, sort_field=None, limit=None, reverse=False):
+            self, query, context=None, sort_field=None, limit=None,
+            reverse=False, start=0):
 
-        results = query.apply(context)
-        if results is None:
-            return
+        all_results = query.apply(context)
+        if not all_results:
+            return QueryResults(context, [], [])
 
+        is_iterator = False
         if sort_field is not None:
             # Like in zope.catalog's searchResults we require the given
             # index to sort on to provide IIndexSort. We bail out if
@@ -50,22 +82,37 @@ class Query(object):
             index = catalog[index_name]
             if not IIndexSort.providedBy(index):
                 raise ValueError(
-                    'Index %s in catalog %s does not support '
-                    'sorting.' % (index_name, catalog_name))
-            results = list(index.sort(results, limit=limit, reverse=reverse))
+                    'Index {} in catalog {} does not support '
+                    'sorting.'.format(index_name, catalog_name))
+            sort_limit = None
+            if limit is not None:
+                sort_limit = start + limit
+            selected_results = index.sort(
+                all_results,
+                limit=sort_limit,
+                reverse=reverse)
+            if start:
+                selected_results = itertools.islice(
+                    selected_results, start, None)
+            is_iterator = True
         else:
             # There's no sort_field given. We still allow to reverse
             # and/or limit the resultset. This mimics zope.catalog's
             # searchResults semantics.
-            if reverse or limit:
-                results = list(results)
+            if limit or start:
+                selected_results = itertools.islice(
+                    all_results, start, limit)
+                is_iterator = True
+            else:
+                selected_results = all_results
             if reverse:
-                results.reverse()
-            if limit:
-                del results[limit:]
+                selected_results = reversed(selected_results)
+                is_iterator = True
 
-        uidutil = getUtility(IIntIds, '', context)
-        return ResultSet(results, uidutil)
+        if is_iterator:
+            selected_results = list(selected_results)
+
+        return QueryResults(context, all_results, selected_results)
 
 
 class Term(object):
@@ -154,6 +201,23 @@ class Not(Term):
         result = IFBTree()
         for uid in intids:
             result.insert(uid, 0)
+        return result
+
+
+class Except(Term):
+
+    def __init__(self, term, *exceptions):
+        self.term = term
+        self.exceptions = exceptions
+
+    def apply(self, context=None):
+        return difference(self.term.apply(context), self._exceptions())
+
+    def _exceptions(self):
+        get_uid = getUtility(IIntIds).getId
+        result = IFBTree()
+        for exception in self.exceptions:
+            result.insert(get_uid(exception), 0)
         return result
 
 
