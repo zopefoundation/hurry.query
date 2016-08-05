@@ -231,8 +231,8 @@ class Objects(Term):
     def apply(self, context=None):
         get_uid = getUtility(IIntIds, '', context).getId
         result = IFBTree()
-        for object in self.objects:
-            result.insert(get_uid(object), 0)
+        for uid in {get_uid(o) for o in self.objects}:
+            result.insert(uid, 0)
         return result
 
 
