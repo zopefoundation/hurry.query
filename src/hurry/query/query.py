@@ -148,8 +148,6 @@ class And(Term):
             results.append((len(r), r))
 
         if not results:
-            # no applicable terms at all
-            # XXX should this be possible?
             return IFBTree()
 
         results.sort()
@@ -175,13 +173,34 @@ class Or(Term):
             results.append(r)
 
         if not results:
-            # no applicable terms at all
-            # XXX should this be possible?
             return IFBTree()
 
         result = results.pop(0)
         for r in results:
             result = union(result, r)
+        return result
+
+
+class Difference(Term):
+
+    def __init__(self, *terms):
+        self.terms = terms
+
+    def apply(self, context=None):
+        results = []
+        for term in self.terms:
+            r = term.apply(context)
+            # empty results
+            if not r:
+                continue
+            results.append(r)
+
+        if not results:
+            return IFBTree()
+
+        result = results.pop(0)
+        for r in results:
+            result = difference(result, r)
         return result
 
 
@@ -204,21 +223,16 @@ class Not(Term):
         return result
 
 
-class Except(Term):
+class Objects(Term):
 
-    def __init__(self, term, *exceptions):
-        # XXX Support other terms as exceptions as well.
-        self.term = term
-        self.exceptions = exceptions
+    def __init__(self, objects):
+        self.objects = objects
 
     def apply(self, context=None):
-        return difference(self.term.apply(context), self._exceptions())
-
-    def _exceptions(self):
-        get_uid = getUtility(IIntIds).getId
+        get_uid = getUtility(IIntIds, '', context).getId
         result = IFBTree()
-        for exception in self.exceptions:
-            result.insert(get_uid(exception), 0)
+        for object in self.objects:
+            result.insert(get_uid(object), 0)
         return result
 
 
