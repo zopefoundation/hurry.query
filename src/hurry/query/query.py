@@ -145,15 +145,15 @@ class And(Term):
             if not r:
                 # empty results
                 return r
-            results.append((len(r), r))
+            results.append(r)
 
         if not results:
             return IFBTree()
 
         results.sort()
 
-        _, result = results.pop(0)
-        for _, r in results:
+        result = results.pop(0)
+        for r in results:
             _, result = weightedIntersection(result, r)
         return result
 
