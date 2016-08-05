@@ -188,10 +188,12 @@ class Difference(Term):
 
     def apply(self, context=None):
         results = []
-        for term in self.terms:
+        for index, term in enumerate(self.terms):
             r = term.apply(context)
             # empty results
             if not r:
+                if not index:
+                    return r
                 continue
             results.append(r)
 
