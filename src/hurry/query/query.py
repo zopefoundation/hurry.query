@@ -20,7 +20,9 @@ $Id$
 """
 import itertools
 
-from BTrees.IFBTree import weightedIntersection, union, difference, IFBTree
+from BTrees.IFBTree import IFSet
+from BTrees.IFBTree import weightedIntersection
+from BTrees.IFBTree import union, difference, intersection
 from zope.cachedescriptors.property import Lazy
 from zope.catalog.field import IFieldIndex
 from zope.catalog.interfaces import ICatalog
@@ -135,8 +137,9 @@ class Term(object):
 
 class And(Term):
 
-    def __init__(self, *terms):
+    def __init__(self, *terms, **kwargs):
         self.terms = terms
+        self.weighted = kwargs.get('weigthed', False)
 
     def apply(self, context=None):
         results = []
@@ -148,13 +151,16 @@ class And(Term):
             results.append(r)
 
         if not results:
-            return IFBTree()
+            return IFSet()
 
         results.sort()
 
         result = results.pop(0)
         for r in results:
-            _, result = weightedIntersection(result, r)
+            if self.weighted:
+                _, result = weightedIntersection(result, r)
+            else:
+                result = intersection(result, r)
         return result
 
 
@@ -173,7 +179,7 @@ class Or(Term):
             results.append(r)
 
         if not results:
-            return IFBTree()
+            return IFSet()
 
         result = results.pop(0)
         for r in results:
@@ -198,7 +204,7 @@ class Difference(Term):
             results.append(r)
 
         if not results:
-            return IFBTree()
+            return IFSet()
 
         result = results.pop(0)
         for r in results:
@@ -218,11 +224,7 @@ class Not(Term):
         # XXX may not work well/be efficient with extentcatalog
         # XXX not very efficient in general, better to use internal
         # IntIds datastructure but that would break abstraction..
-        intids = getUtility(IIntIds)
-        result = IFBTree()
-        for uid in intids:
-            result.insert(uid, 0)
-        return result
+        return IFSet(uid for uid in getUtility(IIntIds))
 
 
 class Objects(Term):
@@ -232,10 +234,7 @@ class Objects(Term):
 
     def apply(self, context=None):
         get_uid = getUtility(IIntIds, '', context).getId
-        result = IFBTree()
-        for uid in {get_uid(o) for o in self.objects}:
-            result.insert(uid, 0)
-        return result
+        return IFSet(get_uid(o) for o in self.objects)
 
 
 class IndexTerm(Term):
@@ -346,7 +345,7 @@ class In(FieldTerm):
 
         if not results:
             # no applicable terms at all
-            return IFBTree()
+            return IFSet()
 
         result = results.pop(0)
         for r in results:
