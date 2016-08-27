@@ -22,7 +22,7 @@ import itertools
 
 from BTrees.IFBTree import IFSet
 from BTrees.IFBTree import weightedIntersection
-from BTrees.IFBTree import union, difference, intersection
+from BTrees.IFBTree import multiunion, difference, intersection
 from zope.cachedescriptors.property import Lazy
 from zope.catalog.field import IFieldIndex
 from zope.catalog.interfaces import ICatalog
@@ -32,8 +32,6 @@ from zope.interface import implements
 from zope.intid.interfaces import IIntIds
 from zope.index.interfaces import IIndexSort
 from hurry.query import interfaces
-
-# XXX look into using multiunion for performance?
 
 
 class QueryResults(object):
@@ -144,16 +142,21 @@ class And(Term):
     def apply(self, context=None):
         results = []
         for term in self.terms:
-            r = term.apply(context)
-            if not r:
-                # empty results
-                return r
-            results.append(r)
+            result = term.apply(context)
+            if not result:
+                # Empty results
+                return result
+            results.append(result)
 
-        if not results:
+        if len(results) == 0:
             return IFSet()
 
-        results.sort()
+        if len(results) == 1:
+            return results[0]
+
+        # Sort results to have the smallest set first to optimize the
+        # set operation.
+        results.sort(key=lambda r: len(r))
 
         result = results.pop(0)
         for r in results:
@@ -161,6 +164,10 @@ class And(Term):
                 _, result = weightedIntersection(result, r)
             else:
                 result = intersection(result, r)
+            if not result:
+                # Empty results
+                return results
+
         return result
 
 
@@ -178,13 +185,12 @@ class Or(Term):
                 continue
             results.append(r)
 
-        if not results:
+        if len(results) == 0:
             return IFSet()
+        if len(results) == 1:
+            return results[0]
 
-        result = results.pop(0)
-        for r in results:
-            result = union(result, r)
-        return result
+        return multiunion(results)
 
 
 class Difference(Term):
@@ -195,24 +201,26 @@ class Difference(Term):
     def apply(self, context=None):
         results = []
         for index, term in enumerate(self.terms):
-            r = term.apply(context)
-            # empty results
-            if not r:
+            result = term.apply(context)
+            # If we do not have any results for the first index, just
+            # return an empty set and stop here.
+            if not result:
                 if not index:
-                    return r
+                    return IFSet()
                 continue
-            results.append(r)
-
-        if not results:
-            return IFSet()
+            results.append(result)
 
         result = results.pop(0)
-        for r in results:
-            result = difference(result, r)
+        for other in results:
+            result = difference(result, other)
+            if not result:
+                # Empty results
+                return result
         return result
 
 
 class Not(Term):
+    # XXX This will kill your application if you use it.
 
     def __init__(self, term):
         self.term = term
@@ -343,11 +351,9 @@ class In(FieldTerm):
                 continue
             results.append(r)
 
-        if not results:
-            # no applicable terms at all
+        if len(results) == 0:
             return IFSet()
+        if len(results) == 1:
+            return results[0]
 
-        result = results.pop(0)
-        for r in results:
-            result = union(result, r)
-        return result
+        return multiunion(results)
