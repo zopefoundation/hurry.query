@@ -33,6 +33,52 @@ from zope.intid.interfaces import IIntIds
 from zope.index.interfaces import IIndexSort
 from hurry.query import interfaces
 
+import transaction
+import threading
+
+
+class ResultCache(threading.local):
+    implements(transaction.interfaces.IDataManager)
+
+    def __init__(self, manager):
+        self._manager = manager
+        self.reset()
+
+    def sortKey(self):
+        return 'A' * 26
+
+    def use(self):
+        if not self._joined:
+            self._joined = True
+            transaction = self._manager.get()
+            transaction.join(self)
+        return self.cache
+
+    def tpc_begin(self, transaction):
+        pass
+
+    def tpc_vote(self, transaction):
+        pass
+
+    def tpc_finish(self, transaction):
+        self.reset()
+
+    def tpc_abort(self, transaction):
+        self.reset()
+
+    def abort(self, transaction):
+        self.reset()
+
+    def commit(self, transaction):
+        pass
+
+    def reset(self):
+        self._joined = False
+        self.cache = {}
+
+
+cache = ResultCache(transaction.manager)
+
 
 class QueryResults(object):
 
@@ -68,7 +114,7 @@ class Query(object):
             self, query, context=None, sort_field=None, limit=None,
             reverse=False, start=0):
 
-        all_results = query.apply(context)
+        all_results = query.cached_apply(cache.use(), context)
         if not all_results:
             return QueryResults(context, [], [])
 
@@ -117,6 +163,24 @@ class Query(object):
 
 class Term(object):
 
+    def key(self, context=None):
+        raise NotImplementedError()
+
+    def apply(self, cache, context=None):
+        raise NotImplementedError()
+
+    def cached_apply(self, cache, context=None):
+        try:
+            key = self.key(context)
+        except NotImplementedError:
+            return self.apply(context)
+        cached = cache.get(key)
+        if cached is not None:
+            return cached
+        result = self.apply(cache, context)
+        cache[key] = result
+        return result
+
     def __and__(self, other):
         return And(self, other)
 
@@ -139,10 +203,10 @@ class And(Term):
         self.terms = terms
         self.weighted = kwargs.get('weigthed', False)
 
-    def apply(self, context=None):
+    def apply(self, cache, context=None):
         results = []
         for term in self.terms:
-            result = term.apply(context)
+            result = term.cached_apply(cache, context)
             if not result:
                 # Empty results
                 return result
@@ -166,9 +230,12 @@ class And(Term):
                 result = intersection(result, r)
             if not result:
                 # Empty results
-                return results
+                return result
 
         return result
+
+    def key(self, context=None):
+        return ('and',) + tuple(term.key(context) for term in self.terms)
 
 
 class Or(Term):
@@ -176,14 +243,14 @@ class Or(Term):
     def __init__(self, *terms):
         self.terms = terms
 
-    def apply(self, context=None):
+    def apply(self, cache, context=None):
         results = []
         for term in self.terms:
-            r = term.apply(context)
+            result = term.cached_apply(cache, context)
             # empty results
-            if not r:
+            if not result:
                 continue
-            results.append(r)
+            results.append(result)
 
         if len(results) == 0:
             return IFSet()
@@ -192,16 +259,19 @@ class Or(Term):
 
         return multiunion(results)
 
+    def key(self, context=None):
+        return ('or',) + tuple(term.key(context) for term in self.terms)
+
 
 class Difference(Term):
 
     def __init__(self, *terms):
         self.terms = terms
 
-    def apply(self, context=None):
+    def apply(self, cache, context=None):
         results = []
         for index, term in enumerate(self.terms):
-            result = term.apply(context)
+            result = term.cached_apply(cache, context)
             # If we do not have any results for the first index, just
             # return an empty set and stop here.
             if not result:
@@ -218,6 +288,10 @@ class Difference(Term):
                 return result
         return result
 
+    def key(self, context=None):
+        return ('difference',) + tuple(
+            term.key(context) for term in self.terms)
+
 
 class Not(Term):
     # XXX This will kill your application if you use it.
@@ -225,24 +299,33 @@ class Not(Term):
     def __init__(self, term):
         self.term = term
 
-    def apply(self, context=None):
-        return difference(self._all(), self.term.apply(context))
+    def apply(self, cache, context=None):
+        return difference(self._all(), self.term.cached_apply(cache, context))
 
     def _all(self):
-        # XXX may not work well/be efficient with extentcatalog
-        # XXX not very efficient in general, better to use internal
-        # IntIds datastructure but that would break abstraction..
         return IFSet(uid for uid in getUtility(IIntIds))
+
+    def key(self, context=None):
+        return ('not', self.term.key(context))
 
 
 class Objects(Term):
 
     def __init__(self, objects):
         self.objects = objects
+        self._ids = None
 
-    def apply(self, context=None):
-        get_uid = getUtility(IIntIds, '', context).getId
-        return IFSet(get_uid(o) for o in self.objects)
+    def ids(self, context=None):
+        if self._ids is None:
+            get_uid = getUtility(IIntIds, '', context).getId
+            self._ids = tuple(get_uid(o) for o in self.objects)
+        return self._ids
+
+    def apply(self, cache, context=None):
+        return IFSet(self.ids(context))
+
+    def key(self, context=None):
+        return ('objects', self.ids(context))
 
 
 class IndexTerm(Term):
@@ -268,9 +351,12 @@ class Text(IndexTerm):
         assert ITextIndex.providedBy(index)
         return index
 
-    def apply(self, context=None):
+    def apply(self, cache, context=None):
         index = self.getIndex(context)
         return index.apply(self.text)
+
+    def key(self, context=None):
+        return ('text', self.catalog_name, self.index_name, self.text)
 
 
 class FieldTerm(IndexTerm):
@@ -288,8 +374,11 @@ class Eq(FieldTerm):
         super(Eq, self).__init__(index_id)
         self.value = value
 
-    def apply(self, context=None):
+    def apply(self, cache, context=None):
         return self.getIndex(context).apply((self.value, self.value))
+
+    def key(self, context=None):
+        return ('equal', self.catalog_name, self.index_name, self.value)
 
 
 class NotEq(FieldTerm):
@@ -298,17 +387,23 @@ class NotEq(FieldTerm):
         super(NotEq, self).__init__(index_id)
         self.not_value = not_value
 
-    def apply(self, context=None):
+    def apply(self, cache, context=None):
         index = self.getIndex(context)
-        all = index.apply((None, None))
-        r = index.apply((self.not_value, self.not_value))
-        return difference(all, r)
+        values = index.apply((None, None))
+        matches = index.apply((self.not_value, self.not_value))
+        return difference(values, matches)
+
+    def key(self, context=None):
+        return ('not equal', self.catalog_name, self.index_name, self.value)
 
 
 class All(FieldTerm):
 
-    def apply(self, context=None):
+    def apply(self, cache, context=None):
         return self.getIndex(context).apply((None, None))
+
+    def key(self, context=None):
+        return ('all', self.catalog_name, self.index_name)
 
 
 class Between(FieldTerm):
@@ -318,8 +413,13 @@ class Between(FieldTerm):
         self.min_value = min_value
         self.max_value = max_value
 
-    def apply(self, context=None):
+    def apply(self, cache, context=None):
         return self.getIndex(context).apply((self.min_value, self.max_value))
+
+    def key(self, context=None):
+        return ('between',
+                self.catalog_name, self.index_name,
+                self.min_value, self.max_value)
 
 
 class Ge(Between):
@@ -341,7 +441,7 @@ class In(FieldTerm):
         super(In, self).__init__(index_id)
         self.values = values
 
-    def apply(self, context=None):
+    def apply(self, cache, context=None):
         results = []
         index = self.getIndex(context)
         for value in self.values:
@@ -357,3 +457,6 @@ class In(FieldTerm):
             return results[0]
 
         return multiunion(results)
+
+    def key(self, context=None):
+        return ('in', self.catalog_name, self.index_name, self.values)
