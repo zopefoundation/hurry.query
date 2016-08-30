@@ -21,22 +21,28 @@ class IQuery(Interface):
 
     def searchResults(
             query, context=None, sort_field=None, limit=None, reverse=False,
-            start=0):
+            start=0, caching=False):
 
         """Query indexes.
 
-        The query argument is a query composed of terms. Optionally provide
-        the `context` parameter for the component lookups.
+        The query argument is a query composed of terms. Optionally
+        provide the `context` parameter for the component lookups.
 
-        Optionally provide a `sort_field` tuple that determines the index used
-        to sort the result set with. This index is required to provide
-        IIndexSort.
+        Optionally provide a `sort_field` tuple that determines the
+        index used to sort the result set with. This index is required
+        to provide IIndexSort.
 
-        Optionally provide a `limit` parameter to limit the result set to the
-        given size.
+        Optionally provide a `limit` parameter to limit the result set
+        to the given size.
 
-        Optionally provide a `reverse` parameter to reverse the order of the
-        result set.
+        Optionally provide a `reverse` parameter to reverse the order
+        of the result set.
+
+        Optionally provide a `start` parameter to ignore the first
+        result in set to the given start position.
+
+        Optionally provide a `caching` parameter to cache terms result
+        across multiple search queries.
 
         """
 

@@ -83,7 +83,7 @@ class Cache(threading.local):
         self.cache = {}
 
 
-cache = Cache(transaction.manager)
+transaction_cache = Cache(transaction.manager)
 
 
 class Results(object):
@@ -123,14 +123,18 @@ class Query(object):
 
     def searchResults(
             self, query, context=None, sort_field=None, limit=None,
-            reverse=False, start=0):
+            reverse=False, start=0, caching=False):
 
         if context is None:
             context = getSiteManager()
         else:
             context = IComponentLookup(context)
+        if caching:
+            cache = transaction_cache.use(context)
+        else:
+            cache = {}
 
-        all_results = query.cached_apply(cache.use(context), context)
+        all_results = query.cached_apply(cache, context)
         if not all_results:
             return Results(context, [], [])
 
