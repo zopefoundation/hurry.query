@@ -12,16 +12,16 @@
 #
 ##############################################################################
 """Query interfaces
-
-$Id$
 """
 
-from zope.interface import Interface
+from zope.interface import Interface, Attribute
+
 
 class IQuery(Interface):
 
     def searchResults(
-        query, context=None, sort_field=None, limit=None, reverse=False):
+            query, context=None, sort_field=None, limit=None, reverse=False,
+            start=0):
 
         """Query indexes.
 
@@ -38,4 +38,41 @@ class IQuery(Interface):
         Optionally provide a `reverse` parameter to reverse the order of the
         result set.
 
+        """
+
+
+class ITerm(Interface):
+
+    def key(context=None):
+        """Return a unique key for this term.
+        """
+
+    def apply(cache, context=None):
+        """Search and return the results for this term as an IFSet or
+        something compatible with it.
+        """
+
+    def cached_apply(cache, context=None):
+        """Look up in the cache and return results or apply the term if needed.
+        """
+
+
+class Results(Interface):
+
+    total = Attribute(
+        'Total number of results (without start/limit restrictions)')
+
+    count = Attribute(
+        'Number of results (with start/limit restrictions)')
+
+    def first():
+        """Return only the first result of the query or None.
+        """
+
+    def __len__():
+        """Return the number of matching objects.
+        """
+
+    def __iter__():
+        """Iterate over the matching objects.
         """

@@ -27,7 +27,7 @@ from zope.cachedescriptors.property import Lazy
 from zope.catalog.field import IFieldIndex
 from zope.catalog.interfaces import ICatalog
 from zope.catalog.text import ITextIndex
-from zope.component import getUtility
+from zope.component import getUtility, getSiteManager, IComponentLookup
 from zope.interface import implements
 from zope.intid.interfaces import IIntIds
 from zope.index.interfaces import IIndexSort
@@ -37,7 +37,7 @@ import transaction
 import threading
 
 
-class ResultCache(threading.local):
+class Cache(threading.local):
     implements(transaction.interfaces.IDataManager)
 
     def __init__(self, manager):
@@ -47,11 +47,16 @@ class ResultCache(threading.local):
     def sortKey(self):
         return 'A' * 26
 
-    def use(self):
+    def use(self, context):
         if not self._joined:
             self._joined = True
             transaction = self._manager.get()
             transaction.join(self)
+        if context is not self._context:
+            # The context changed, reset the cache as we might access
+            # different indexes.
+            self.cache = {}
+            self._context = context
         return self.cache
 
     def tpc_begin(self, transaction):
@@ -74,13 +79,15 @@ class ResultCache(threading.local):
 
     def reset(self):
         self._joined = False
+        self._context = None
         self.cache = {}
 
 
-cache = ResultCache(transaction.manager)
+cache = Cache(transaction.manager)
 
 
-class QueryResults(object):
+class Results(object):
+    implements(interfaces.IQuery)
 
     def __init__(self, context, all_results, selected_results):
         self.context = context
@@ -99,6 +106,10 @@ class QueryResults(object):
     def count(self):
         return len(self.__selected)
 
+    def first(self):
+        for uid in self.__selected:
+            return self.get(uid)
+
     def __len__(self):
         return len(self.__selected)
 
@@ -114,9 +125,14 @@ class Query(object):
             self, query, context=None, sort_field=None, limit=None,
             reverse=False, start=0):
 
-        all_results = query.cached_apply(cache.use(), context)
+        if context is None:
+            context = getSiteManager()
+        else:
+            context = IComponentLookup(context)
+
+        all_results = query.cached_apply(cache.use(context), context)
         if not all_results:
-            return QueryResults(context, [], [])
+            return Results(context, [], [])
 
         is_iterator = False
         if sort_field is not None:
@@ -158,10 +174,11 @@ class Query(object):
         if is_iterator:
             selected_results = list(selected_results)
 
-        return QueryResults(context, all_results, selected_results)
+        return Results(context, all_results, selected_results)
 
 
 class Term(object):
+    implements(interfaces.ITerm)
 
     def key(self, context=None):
         raise NotImplementedError()
@@ -173,7 +190,7 @@ class Term(object):
         try:
             key = self.key(context)
         except NotImplementedError:
-            return self.apply(context)
+            return self.apply(cache, context)
         cached = cache.get(key)
         if cached is not None:
             return cached

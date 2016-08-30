@@ -69,13 +69,13 @@ class SetBetween(SetTerm):
                  minimum=None, maximum=None,
                  include_minimum=False, include_maximum=False):
         super(SetBetween, self).__init__(index_id)
-        self.tuple = (minimum, maximum, include_minimum, include_maximum)
+        self.options = (minimum, maximum, include_minimum, include_maximum)
 
     def apply(self, context=None):
-        return self.getIndex(context).apply({'between': self.tuple})
+        return self.getIndex(context).apply({'between': self.options})
 
     def key(self, context=None):
-        return ('between', self.catalog_name, self.index_name, self.tuple)
+        return ('between', self.catalog_name, self.index_name, self.options)
 
 
 class ExtentAny(SetTerm):
