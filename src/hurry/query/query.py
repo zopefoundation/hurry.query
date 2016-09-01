@@ -429,18 +429,16 @@ class All(FieldTerm):
 
 class Between(FieldTerm):
 
-    def __init__(self, index_id, min_value, max_value):
+    def __init__(self, index_id,
+                 minimum=None, maximum=None):
         super(Between, self).__init__(index_id)
-        self.min_value = min_value
-        self.max_value = max_value
+        self.options = (minimum, maximum)
 
     def apply(self, cache, context=None):
-        return self.getIndex(context).apply((self.min_value, self.max_value))
+        return self.getIndex(context).apply(self.options)
 
     def key(self, context=None):
-        return ('between',
-                self.catalog_name, self.index_name,
-                self.min_value, self.max_value)
+        return ('between', self.catalog_name, self.index_name, self.options)
 
 
 class Ge(Between):
@@ -460,7 +458,7 @@ class In(FieldTerm):
     def __init__(self, index_id, values):
         assert None not in values
         super(In, self).__init__(index_id)
-        self.values = values
+        self.values = tuple(values)
 
     def apply(self, cache, context=None):
         results = []
