@@ -18,6 +18,7 @@ $Id$
 import os
 from setuptools import setup, find_packages
 
+
 def read(*rnames):
     text = open(os.path.join(os.path.dirname(__file__), *rnames)).read()
     text = unicode(text, 'utf-8').encode('ascii', 'xmlcharrefreplace')
@@ -33,12 +34,12 @@ setup(
     author='Infrae',
     author_email='faassen@startifact.com',
     description="Higher level query system for the zope.catalog",
-    long_description=read('src','hurry','query','query.txt') +
-                     '\n\n' +
-                     read('CHANGES.txt'),
+    long_description=(read('src', 'hurry', 'query', 'query.txt') +
+                      '\n\n' +
+                      read('CHANGES.txt')),
     license='ZPL 2.1',
     keywords="zope zope3 catalog index query",
-    classifiers = [
+    classifiers=[
         'Development Status :: 5 - Production/Stable',
         'Environment :: Web Environment',
         'Intended Audience :: Developers',
@@ -48,25 +49,25 @@ setup(
         'Operating System :: OS Independent',
         'Topic :: Internet :: WWW/HTTP',
         'Framework :: Zope3'],
-    url = 'http://pypi.python.org/pypi/hurry.query',
+    url='http://pypi.python.org/pypi/hurry.query',
     packages=find_packages('src'),
-    package_dir= {'':'src'},
-
+    package_dir={'': 'src'},
     namespace_packages=['hurry'],
-    package_data = {
-    '': ['*.txt', '*.zcml'],
+    package_data={
+        '': ['*.txt', '*.zcml'],
     },
-
     zip_safe=False,
     install_requires=[
+        'ZODB3',
         'setuptools',
         'zc.catalog',
-        'ZODB3',
+        'zope.cachedescriptors',
         'zope.catalog',
         'zope.component',
+        'zope.index',
         'zope.interface',
         'zope.intid',
-        ],
-    tests_require = tests_require,
-    extras_require = {'test': tests_require},
+    ],
+    tests_require=tests_require,
+    extras_require={'test': tests_require},
     )

@@ -165,14 +165,13 @@ class Query(object):
             # There's no sort_field given. We still allow to reverse
             # and/or limit the resultset. This mimics zope.catalog's
             # searchResults semantics.
-            if limit or start:
-                selected_results = itertools.islice(
-                    all_results, start, start + limit)
-                is_iterator = True
-            else:
-                selected_results = all_results
+            selected_results = all_results
             if reverse:
                 selected_results = reversed(selected_results)
+                is_iterator = True
+            if limit or start:
+                selected_results = itertools.islice(
+                    selected_results, start, start + limit)
                 is_iterator = True
 
         if is_iterator:
@@ -404,14 +403,14 @@ class Eq(FieldTerm):
 
 class NotEq(FieldTerm):
 
-    def __init__(self, index_id, not_value):
+    def __init__(self, index_id, value):
         super(NotEq, self).__init__(index_id)
-        self.not_value = not_value
+        self.value = value
 
     def apply(self, cache, context=None):
         index = self.getIndex(context)
         values = index.apply((None, None))
-        matches = index.apply((self.not_value, self.not_value))
+        matches = index.apply((self.value, self.value))
         return difference(values, matches)
 
     def key(self, context=None):

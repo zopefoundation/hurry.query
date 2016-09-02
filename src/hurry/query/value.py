@@ -44,9 +44,9 @@ class Eq(ValueTerm):
 
 class NotEq(ValueTerm):
 
-    def __init__(self, index_id, not_value):
+    def __init__(self, index_id, value):
         super(NotEq, self).__init__(index_id)
-        self.not_value = not_value
+        self.value = value
 
     def apply(self, cache, context=None):
         index = self.getIndex(context)
@@ -56,7 +56,7 @@ class NotEq(ValueTerm):
         # try/except clause is more efficent than first searching the
         # list for the value to remove.
         try:
-            values.remove(self.not_value)
+            values.remove(self.value)
         except ValueError:
             pass
         return index.apply({'any_of': values})
@@ -105,7 +105,7 @@ class In(ValueTerm):
     def __init__(self, index_id, values):
         assert None not in values
         super(In, self).__init__(index_id)
-        self.values = values
+        self.values = tuple(values)
 
     def apply(self, cache, context=None):
         return self.getIndex(context).apply({'any_of': self.values})
