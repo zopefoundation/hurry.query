@@ -4,7 +4,24 @@ CHANGES
 1.3 (unreleased)
 ----------------
 
-- Nothing changed yet.
+- Add new term: Difference. It does a difference between the first and
+  the following terms passed as arguments.
+
+- Add new term: Objects. It creates a result out of the objects passed
+  in arguments. It let you mix real objects with existing catalog
+  queries (with And, Or or Difference for instance).
+
+- Add an option start to searchResult to skip the first results in the
+  results set.
+
+- Extend the result from searchResult. You have addition information
+  on the result, including the total number of results without
+  start/limit restriction. A method called first() return only the
+  first result if available or none.
+
+- Add an option caching to searchResult to cache the result of each
+  terms within a Zope transaction, speeding similar queries. If
+  disabled, terms will still be cached within the same query.
 
 
 1.2 (2015-12-16)
