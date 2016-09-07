@@ -61,6 +61,8 @@ the full-blown zope environment::
   ...             intid = self.counter
   ...             self.counter += 1
   ...         return intid
+  ...     def getId(self, obj):
+  ...         return getattr(obj, self.MARKER)
   ...     def getObject(self, intid):
   ...         return self.data[intid]
   ...     def __iter__(self):
@@ -547,3 +549,31 @@ the tested index is deterministic enough to be used as a proper test).
   >>> f1 = ('catalog1', 'f1')
   >>> displayResult(Eq(f1, 'a'), limit=2, reverse=True)
   [6, 2]
+
+
+You can search on text, here all the items that contains better::
+
+  >>> from hurry.query import Text
+  >>> t1 = ('catalog1', 't')
+  >>> displayResult(Text(t1, 'better'))
+  [1, 2, 3, 4]
+
+Invalid text query returns an empty results::
+
+  >>> displayResult(Text(t1, '?*'))
+  []
+
+You can do differences, here all the items that contains better but do
+have a as f1::
+
+  >>> from hurry.query import Difference
+  >>> displayResult(Difference(Text(t1, 'better'), Eq(f1, 'a')))
+  [3, 4]
+
+
+There is a special term that allows to mix objects with catalog
+queries::
+
+  >>> from hurry.query import Objects
+  >>> displayResult(Objects(content))
+  [1, 2, 3, 4, 5, 6]

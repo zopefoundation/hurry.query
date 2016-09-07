@@ -12,30 +12,73 @@
 #
 ##############################################################################
 """Query interfaces
-
-$Id$
 """
 
-from zope.interface import Interface
+from zope.interface import Interface, Attribute
+
 
 class IQuery(Interface):
 
     def searchResults(
-        query, context=None, sort_field=None, limit=None, reverse=False):
+            query, context=None, sort_field=None, limit=None, reverse=False,
+            start=0, caching=False):
 
         """Query indexes.
 
-        The query argument is a query composed of terms. Optionally provide
-        the `context` parameter for the component lookups.
+        The query argument is a query composed of terms. Optionally
+        provide the `context` parameter for the component lookups.
 
-        Optionally provide a `sort_field` tuple that determines the index used
-        to sort the result set with. This index is required to provide
-        IIndexSort.
+        Optionally provide a `sort_field` tuple that determines the
+        index used to sort the result set with. This index is required
+        to provide IIndexSort.
 
-        Optionally provide a `limit` parameter to limit the result set to the
-        given size.
+        Optionally provide a `limit` parameter to limit the result set
+        to the given size.
 
-        Optionally provide a `reverse` parameter to reverse the order of the
-        result set.
+        Optionally provide a `reverse` parameter to reverse the order
+        of the result set.
 
+        Optionally provide a `start` parameter to ignore the first
+        result in set to the given start position.
+
+        Optionally provide a `caching` parameter to cache terms result
+        across multiple search queries.
+        """
+
+
+class ITerm(Interface):
+
+    def key(context=None):
+        """Return a unique key for this term.
+        """
+
+    def apply(cache, context=None):
+        """Search and return the results for this term as an IFSet or
+        something compatible with it.
+        """
+
+    def cached_apply(cache, context=None):
+        """Look up in the cache and return results or apply the term if needed.
+        """
+
+
+class Results(Interface):
+
+    total = Attribute(
+        'Total number of results (without start/limit restrictions)')
+
+    count = Attribute(
+        'Number of results (with start/limit restrictions)')
+
+    def first():
+        """Return only the first result of the query or None.
+        """
+
+    def __len__():
+        """Return the number of results (with start/limit restrictions), that
+        is the same than count.
+        """
+
+    def __iter__():
+        """Iterate over the matching objects.
         """

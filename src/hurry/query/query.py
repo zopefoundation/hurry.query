@@ -18,29 +18,131 @@ implementations and concrete term implementations for zope.catalog indexes.
 
 $Id$
 """
-from BTrees.IFBTree import weightedIntersection, union, difference, IFBTree
-from zope.catalog.catalog import ResultSet
+import itertools
+import logging
+
+from BTrees.IFBTree import IFSet
+from BTrees.IFBTree import weightedIntersection
+from BTrees.IFBTree import multiunion, difference, intersection
+from zope.cachedescriptors.property import Lazy
 from zope.catalog.field import IFieldIndex
 from zope.catalog.interfaces import ICatalog
 from zope.catalog.text import ITextIndex
-from zope.component import getUtility
+from zope.component import getUtility, getSiteManager, IComponentLookup
 from zope.interface import implements
 from zope.intid.interfaces import IIntIds
 from zope.index.interfaces import IIndexSort
+from zope.index.text.parsetree import ParseError
 from hurry.query import interfaces
 
-# XXX look into using multiunion for performance?
+import transaction
+import threading
+
+logger = logging.getLogger('hurry.query')
+
+
+class Cache(threading.local):
+    implements(transaction.interfaces.IDataManager)
+
+    def __init__(self, manager):
+        self._manager = manager
+        self.reset()
+
+    def sortKey(self):
+        return 'A' * 26
+
+    def use(self, context):
+        if not self._joined:
+            self._joined = True
+            transaction = self._manager.get()
+            transaction.join(self)
+        if context is not self._context:
+            # The context changed, reset the cache as we might access
+            # different indexes.
+            self.cache = {}
+            self._context = context
+        return self.cache
+
+    def tpc_begin(self, transaction):
+        pass
+
+    def tpc_vote(self, transaction):
+        pass
+
+    def tpc_finish(self, transaction):
+        self.reset()
+
+    def tpc_abort(self, transaction):
+        self.reset()
+
+    def abort(self, transaction):
+        self.reset()
+
+    def commit(self, transaction):
+        pass
+
+    def reset(self):
+        self._joined = False
+        self._context = None
+        self.cache = {}
+
+
+transaction_cache = Cache(transaction.manager)
+
+
+class Results(object):
+    implements(interfaces.IQuery)
+
+    def __init__(self, context, all_results, selected_results):
+        self.context = context
+        self.__all = all_results
+        self.__selected = selected_results
+
+    @Lazy
+    def get(self):
+        return getUtility(IIntIds, '', self.context).getObject
+
+    @property
+    def total(self):
+        return len(self.__all)
+
+    @property
+    def count(self):
+        return len(self.__selected)
+
+    def first(self):
+        for uid in self.__selected:
+            return self.get(uid)
+
+    def __len__(self):
+        return len(self.__selected)
+
+    def __iter__(self):
+        for uid in self.__selected:
+            yield self.get(uid)
+
 
 class Query(object):
     implements(interfaces.IQuery)
 
     def searchResults(
-        self, query, context=None, sort_field=None, limit=None, reverse=False):
+            self, query, context=None, sort_field=None, limit=None,
+            reverse=False, start=0, caching=False):
 
-        results = query.apply(context)
-        if results is None:
-            return
+        if context is None:
+            context = getSiteManager()
+        else:
+            context = IComponentLookup(context)
+        if caching:
+            cache = transaction_cache.use(context)
+        else:
+            cache = {}
 
+        all_results = query.cached_apply(cache, context)
+        if not all_results:
+            return Results(context, [], [])
+
+        is_iterator = False
         if sort_field is not None:
             # Like in zope.catalog's searchResults we require the given
             # index to sort on to provide IIndexSort. We bail out if
@@ -50,25 +152,58 @@ class Query(object):
             index = catalog[index_name]
             if not IIndexSort.providedBy(index):
                 raise ValueError(
-                    'Index %s in catalog %s does not support '
-                    'sorting.' % (index_name, catalog_name))
-            results = list(index.sort(results, limit=limit, reverse=reverse))
+                    'Index {} in catalog {} does not support '
+                    'sorting.'.format(index_name, catalog_name))
+            sort_limit = None
+            if limit is not None:
+                sort_limit = start + limit
+            selected_results = index.sort(
+                all_results,
+                limit=sort_limit,
+                reverse=reverse)
+            if start:
+                selected_results = itertools.islice(
+                    selected_results, start, None)
+            is_iterator = True
         else:
             # There's no sort_field given. We still allow to reverse
             # and/or limit the resultset. This mimics zope.catalog's
             # searchResults semantics.
-            if reverse or limit:
-                results = list(results)
+            selected_results = all_results
             if reverse:
-                results.reverse()
-            if limit:
-                del results[limit:]
+                selected_results = reversed(selected_results)
+                is_iterator = True
+            if limit or start:
+                selected_results = itertools.islice(
+                    selected_results, start, start + limit)
+                is_iterator = True
 
-        uidutil = getUtility(IIntIds, '', context)
-        return ResultSet(results, uidutil)
+        if is_iterator:
+            selected_results = list(selected_results)
+
+        return Results(context, all_results, selected_results)
 
 
 class Term(object):
+    implements(interfaces.ITerm)
+
+    def key(self, context=None):
+        raise NotImplementedError()
+
+    def apply(self, cache, context=None):
+        raise NotImplementedError()
+
+    def cached_apply(self, cache, context=None):
+        try:
+            key = self.key(context)
+        except NotImplementedError:
+            return self.apply(cache, context)
+        cached = cache.get(key)
+        if cached is not None:
+            return cached
+        result = self.apply(cache, context)
+        cache[key] = result
+        return result
 
     def __and__(self, other):
         return And(self, other)
@@ -88,29 +223,43 @@ class Term(object):
 
 class And(Term):
 
-    def __init__(self, *terms):
+    def __init__(self, *terms, **kwargs):
         self.terms = terms
+        self.weighted = kwargs.get('weigthed', False)
 
-    def apply(self, context=None):
+    def apply(self, cache, context=None):
         results = []
         for term in self.terms:
-            r = term.apply(context)
-            if not r:
-                # empty results
-                return r
-            results.append((len(r), r))
+            result = term.cached_apply(cache, context)
+            if not result:
+                # Empty results
+                return result
+            results.append(result)
 
-        if not results:
-            # no applicable terms at all
-            # XXX should this be possible?
-            return IFBTree()
+        if len(results) == 0:
+            return IFSet()
 
-        results.sort()
+        if len(results) == 1:
+            return results[0]
 
-        _, result = results.pop(0)
-        for _, r in results:
-            _, result = weightedIntersection(result, r)
+        # Sort results to have the smallest set first to optimize the
+        # set operation.
+        results.sort(key=lambda r: len(r))
+
+        result = results.pop(0)
+        for r in results:
+            if self.weighted:
+                _, result = weightedIntersection(result, r)
+            else:
+                result = intersection(result, r)
+            if not result:
+                # Empty results
+                return result
+
         return result
+
+    def key(self, context=None):
+        return ('and',) + tuple(term.key(context) for term in self.terms)
 
 
 class Or(Term):
@@ -118,43 +267,91 @@ class Or(Term):
     def __init__(self, *terms):
         self.terms = terms
 
-    def apply(self, context=None):
+    def apply(self, cache, context=None):
         results = []
         for term in self.terms:
-            r = term.apply(context)
+            result = term.cached_apply(cache, context)
             # empty results
-            if not r:
+            if not result:
                 continue
-            results.append(r)
+            results.append(result)
 
-        if not results:
-            # no applicable terms at all
-            # XXX should this be possible?
-            return IFBTree()
+        if len(results) == 0:
+            return IFSet()
+        if len(results) == 1:
+            return results[0]
+
+        return multiunion(results)
+
+    def key(self, context=None):
+        return ('or',) + tuple(term.key(context) for term in self.terms)
+
+
+class Difference(Term):
+
+    def __init__(self, *terms):
+        self.terms = terms
+
+    def apply(self, cache, context=None):
+        results = []
+        for index, term in enumerate(self.terms):
+            result = term.cached_apply(cache, context)
+            # If we do not have any results for the first index, just
+            # return an empty set and stop here.
+            if not result:
+                if not index:
+                    return IFSet()
+                continue
+            results.append(result)
 
         result = results.pop(0)
-        for r in results:
-            result = union(result, r)
+        for other in results:
+            result = difference(result, other)
+            if not result:
+                # Empty results
+                return result
         return result
+
+    def key(self, context=None):
+        return ('difference',) + tuple(
+            term.key(context) for term in self.terms)
 
 
 class Not(Term):
+    # XXX This term will load all the intids of your application
+    # resulting in major and heavy performance issues. It is advised
+    # not to use it.
 
     def __init__(self, term):
         self.term = term
 
-    def apply(self, context=None):
-        return difference(self._all(), self.term.apply(context))
+    def apply(self, cache, context=None):
+        return difference(self._all(), self.term.cached_apply(cache, context))
 
     def _all(self):
-        # XXX may not work well/be efficient with extentcatalog
-        # XXX not very efficient in general, better to use internal
-        # IntIds datastructure but that would break abstraction..
-        intids = getUtility(IIntIds)
-        result = IFBTree()
-        for uid in intids:
-            result.insert(uid, 0)
-        return result
+        return IFSet(uid for uid in getUtility(IIntIds))
+
+    def key(self, context=None):
+        return ('not', self.term.key(context))
+
+
+class Objects(Term):
+
+    def __init__(self, objects):
+        self.objects = objects
+        self._ids = None
+
+    def ids(self, context=None):
+        if self._ids is None:
+            get_uid = getUtility(IIntIds, '', context).getId
+            self._ids = tuple(get_uid(o) for o in self.objects)
+        return self._ids
+
+    def apply(self, cache, context=None):
+        return IFSet(self.ids(context))
+
+    def key(self, context=None):
+        return ('objects', self.ids(context))
 
 
 class IndexTerm(Term):
@@ -180,9 +377,16 @@ class Text(IndexTerm):
         assert ITextIndex.providedBy(index)
         return index
 
-    def apply(self, context=None):
+    def apply(self, cache, context=None):
         index = self.getIndex(context)
-        return index.apply(self.text)
+        try:
+            return index.apply(self.text)
+        except ParseError:
+            logger.error('search text "{}" yielded a ParseError')
+            return IFSet()
+
+    def key(self, context=None):
+        return ('text', self.catalog_name, self.index_name, self.text)
 
 
 class FieldTerm(IndexTerm):
@@ -200,38 +404,50 @@ class Eq(FieldTerm):
         super(Eq, self).__init__(index_id)
         self.value = value
 
-    def apply(self, context=None):
+    def apply(self, cache, context=None):
         return self.getIndex(context).apply((self.value, self.value))
+
+    def key(self, context=None):
+        return ('equal', self.catalog_name, self.index_name, self.value)
 
 
 class NotEq(FieldTerm):
 
-    def __init__(self, index_id, not_value):
+    def __init__(self, index_id, value):
         super(NotEq, self).__init__(index_id)
-        self.not_value = not_value
+        self.value = value
 
-    def apply(self, context=None):
+    def apply(self, cache, context=None):
         index = self.getIndex(context)
-        all = index.apply((None, None))
-        r = index.apply((self.not_value, self.not_value))
-        return difference(all, r)
+        values = index.apply((None, None))
+        matches = index.apply((self.value, self.value))
+        return difference(values, matches)
+
+    def key(self, context=None):
+        return ('not equal', self.catalog_name, self.index_name, self.value)
 
 
 class All(FieldTerm):
 
-    def apply(self, context=None):
+    def apply(self, cache, context=None):
         return self.getIndex(context).apply((None, None))
+
+    def key(self, context=None):
+        return ('all', self.catalog_name, self.index_name)
 
 
 class Between(FieldTerm):
 
-    def __init__(self, index_id, min_value, max_value):
+    def __init__(self, index_id,
+                 minimum=None, maximum=None):
         super(Between, self).__init__(index_id)
-        self.min_value = min_value
-        self.max_value = max_value
+        self.options = (minimum, maximum)
 
-    def apply(self, context=None):
-        return self.getIndex(context).apply((self.min_value, self.max_value))
+    def apply(self, cache, context=None):
+        return self.getIndex(context).apply(self.options)
+
+    def key(self, context=None):
+        return ('between', self.catalog_name, self.index_name, self.options)
 
 
 class Ge(Between):
@@ -251,9 +467,9 @@ class In(FieldTerm):
     def __init__(self, index_id, values):
         assert None not in values
         super(In, self).__init__(index_id)
-        self.values = values
+        self.values = tuple(values)
 
-    def apply(self, context=None):
+    def apply(self, cache, context=None):
         results = []
         index = self.getIndex(context)
         for value in self.values:
@@ -263,11 +479,12 @@ class In(FieldTerm):
                 continue
             results.append(r)
 
-        if not results:
-            # no applicable terms at all
-            return IFBTree()
+        if len(results) == 0:
+            return IFSet()
+        if len(results) == 1:
+            return results[0]
 
-        result = results.pop(0)
-        for r in results:
-            result = union(result, r)
-        return result
+        return multiunion(results)
+
+    def key(self, context=None):
+        return ('in', self.catalog_name, self.index_name, self.values)

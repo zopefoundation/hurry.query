@@ -35,17 +35,20 @@ class Eq(ValueTerm):
         super(Eq, self).__init__(index_id)
         self.value = value
 
-    def apply(self, context=None):
+    def apply(self, cache, context=None):
         return self.getIndex(context).apply({'any_of': (self.value,)})
+
+    def key(self, context=None):
+        return ('equal', self.catalog_name, self.index_name, self.value)
 
 
 class NotEq(ValueTerm):
 
-    def __init__(self, index_id, not_value):
+    def __init__(self, index_id, value):
         super(NotEq, self).__init__(index_id)
-        self.not_value = not_value
+        self.value = value
 
-    def apply(self, context=None):
+    def apply(self, cache, context=None):
         index = self.getIndex(context)
         values = list(index.values())
         # the remove method produces a value error when the value to
@@ -53,16 +56,22 @@ class NotEq(ValueTerm):
         # try/except clause is more efficent than first searching the
         # list for the value to remove.
         try:
-            values.remove(self.not_value)
+            values.remove(self.value)
         except ValueError:
             pass
         return index.apply({'any_of': values})
 
+    def key(self, context=None):
+        return ('not equal', self.catalog_name, self.index_name, self.value)
+
 
 class All(ValueTerm):
 
-    def apply(self, context=None):
+    def apply(self, cache, context=None):
         return self.getIndex(context).apply({'any': None})
+
+    def key(self, context=None):
+        return ('all', self.catalog_name, self.index_name)
 
 
 class Between(ValueTerm):
@@ -70,15 +79,13 @@ class Between(ValueTerm):
     def __init__(self, index_id, min_value=None, max_value=None,
                  exclude_min=False, exclude_max=False):
         super(Between, self).__init__(index_id)
-        self.min_value = min_value
-        self.max_value = max_value
-        self.exclude_min = exclude_min
-        self.exclude_max = exclude_max
+        self.options = (min_value, max_value, exclude_min, exclude_max)
 
-    def apply(self, context=None):
-        return self.getIndex(context).apply(
-            {'between': (self.min_value, self.max_value,
-                         self.exclude_min, self.exclude_max)})
+    def apply(self, cache, context=None):
+        return self.getIndex(context).apply({'between': self.options})
+
+    def key(self, context=None):
+        return ('between', self.catalog_name, self.index_name, self.options)
 
 
 class Ge(Between):
@@ -98,10 +105,13 @@ class In(ValueTerm):
     def __init__(self, index_id, values):
         assert None not in values
         super(In, self).__init__(index_id)
-        self.values = values
+        self.values = tuple(values)
 
-    def apply(self, context=None):
+    def apply(self, cache, context=None):
         return self.getIndex(context).apply({'any_of': self.values})
+
+    def key(self, context=None):
+        return ('in', self.catalog_name, self.index_name, self.values)
 
 
 class ExtentAny(ValueTerm):
@@ -111,7 +121,7 @@ class ExtentAny(ValueTerm):
         super(ExtentAny, self).__init__(index_id)
         self.extent = extent
 
-    def apply(self, context=None):
+    def apply(self, cache, context=None):
         return self.getIndex(context).apply({'any': self.extent})
 
 
@@ -122,5 +132,5 @@ class ExtentNone(ValueTerm):
         super(ExtentNone, self).__init__(index_id)
         self.extent = extent
 
-    def apply(self, context=None):
+    def apply(self, cache, context=None):
         return self.getIndex(context).apply({'none': self.extent})

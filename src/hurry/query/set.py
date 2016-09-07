@@ -30,28 +30,37 @@ class SetTerm(query.IndexTerm):
 
 class All(SetTerm):
 
-    def apply(self, context=None):
+    def apply(self, cache, context=None):
         return self.getIndex(context).apply({'any': None})
+
+    def key(self, context=None):
+        return ('all', self.catalog_name, self.index_name)
 
 
 class AnyOf(SetTerm):
 
     def __init__(self, index_id, values):
         super(AnyOf, self).__init__(index_id)
-        self.values = values
+        self.values = tuple(values)
 
-    def apply(self, context=None):
+    def apply(self, cache, context=None):
         return self.getIndex(context).apply({'any_of': self.values})
+
+    def key(self, context=None):
+        return ('any of', self.catalog_name, self.index_name, self.values)
 
 
 class AllOf(SetTerm):
 
     def __init__(self, index_id, values):
         super(AllOf, self).__init__(index_id)
-        self.values = values
+        self.values = tuple(values)
 
-    def apply(self, context=None):
+    def apply(self, cache, context=None):
         return self.getIndex(context).apply({'all_of': self.values})
+
+    def key(self, context=None):
+        return ('all of', self.catalog_name, self.index_name, self.values)
 
 
 class SetBetween(SetTerm):
@@ -60,20 +69,23 @@ class SetBetween(SetTerm):
                  minimum=None, maximum=None,
                  include_minimum=False, include_maximum=False):
         super(SetBetween, self).__init__(index_id)
-        self.tuple = (minimum, maximum, include_minimum, include_maximum)
+        self.options = (minimum, maximum, include_minimum, include_maximum)
 
     def apply(self, context=None):
-        return self.getIndex(context).apply({'between': self.tuple})
+        return self.getIndex(context).apply({'between': self.options})
+
+    def key(self, context=None):
+        return ('between', self.catalog_name, self.index_name, self.options)
 
 
 class ExtentAny(SetTerm):
     """Any ids in the extent that are indexed by this index."""
 
     def __init__(self, index_id, extent):
-        super(Any, self).__init__(index_id)
+        super(ExtentAny, self).__init__(index_id)
         self.extent = extent
 
-    def apply(self, context=None):
+    def apply(self, cache, context=None):
         return self.getIndex(context).apply({'any': self.extent})
 
 
@@ -84,5 +96,5 @@ class ExtentNone(SetTerm):
         super(None, self).__init__(index_id)
         self.extent = extent
 
-    def apply(self, context=None):
+    def apply(self, cache, context=None):
         return self.getIndex(context).apply({'none': self.extent})
