@@ -19,6 +19,7 @@ implementations and concrete term implementations for zope.catalog indexes.
 $Id$
 """
 import itertools
+import logging
 
 from BTrees.IFBTree import IFSet
 from BTrees.IFBTree import weightedIntersection
@@ -31,10 +32,13 @@ from zope.component import getUtility, getSiteManager, IComponentLookup
 from zope.interface import implements
 from zope.intid.interfaces import IIntIds
 from zope.index.interfaces import IIndexSort
+from zope.index.text.parsetree import ParseError
 from hurry.query import interfaces
 
 import transaction
 import threading
+
+logger = logging.getLogger('hurry.query')
 
 
 class Cache(threading.local):
@@ -314,7 +318,9 @@ class Difference(Term):
 
 
 class Not(Term):
-    # XXX This will kill your application if you use it.
+    # XXX This term will load all the intids of your application
+    # resulting in major and heavy performance issues. It is advised
+    # not to use it.
 
     def __init__(self, term):
         self.term = term
@@ -373,7 +379,11 @@ class Text(IndexTerm):
 
     def apply(self, cache, context=None):
         index = self.getIndex(context)
-        return index.apply(self.text)
+        try:
+            return index.apply(self.text)
+        except ParseError:
+            logger.error('search text "{}" yielded a ParseError')
+            return IFSet()
 
     def key(self, context=None):
         return ('text', self.catalog_name, self.index_name, self.text)

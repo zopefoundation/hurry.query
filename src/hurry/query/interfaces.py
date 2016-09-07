@@ -43,7 +43,6 @@ class IQuery(Interface):
 
         Optionally provide a `caching` parameter to cache terms result
         across multiple search queries.
-
         """
 
 
@@ -76,7 +75,8 @@ class Results(Interface):
         """
 
     def __len__():
-        """Return the number of matching objects.
+        """Return the number of results (with start/limit restrictions), that
+        is the same than count.
         """
 
     def __iter__():
