@@ -462,8 +462,8 @@ Now we can query this catalog by specifying the context:
   >>> displayQuery(In(f1, ['A', 'B']), context=site1)
   [1, 2]
 
-Sorting and limiting the resultset
-----------------------------------
+Sorting and limiting the results
+--------------------------------
 
 It's possible to have the resultset sorted on one of the fields in the query.
 
@@ -551,6 +551,9 @@ the tested index is deterministic enough to be used as a proper test).
   [6, 2]
 
 
+Text index
+----------
+
 You can search on text, here all the items that contains better::
 
   >>> from hurry.query import Text
@@ -562,6 +565,10 @@ Invalid text query returns an empty results::
 
   >>> displayResult(Text(t1, '?*'))
   []
+
+
+Other terms
+-----------
 
 You can do differences, here all the items that contains better but do
 have a as f1::

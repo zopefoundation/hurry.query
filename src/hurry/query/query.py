@@ -382,7 +382,8 @@ class Text(IndexTerm):
         try:
             return index.apply(self.text)
         except ParseError:
-            logger.error('search text "{}" yielded a ParseError')
+            logger.error(
+                'search text "{}" yielded a ParseError'.format(self.text))
             return IFSet()
 
     def key(self, context=None):
