@@ -190,7 +190,7 @@ class TimingAwareCache(object):
         indent = 0
         order = [all_timing[0].end_order]
         logger.info(
-            'Catalog query toke {:.4f} for terms, {:.4f} to finish.'.format(
+            'Catalog query toke {:.4f}s for terms, {:.4f}s to finish.'.format(
                 total_terms, total_post))
         for timing in all_timing:
             if timing.start_order < order[-1]:
