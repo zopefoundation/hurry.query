@@ -183,12 +183,12 @@ class TimingAwareCache(object):
             if timing.start_order < order[-1]:
                 indent += 4
                 order.append(timing.end_order)
-            if timing.end_order > order[-1]:
-                indent -= 4
-                order.pop()
             logger.info(
                 '{} {:.4f}s: {}.'.format(
                     ' ' * indent, timing.total, str(timing.key)))
+            if timing.end_order > order[-1]:
+                indent -= 4
+                order.pop()
 
 
 class Query(object):
