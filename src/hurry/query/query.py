@@ -133,7 +133,7 @@ class Results(object):
 
 class Timing(object):
 
-    def __init__(self, key, order=0):
+    def __init__(self, key=None, order=0):
         self.key = key
         self.start = time.clock()
         self.start_order = order
@@ -157,6 +157,13 @@ class TimingAwareCache(object):
         self.cache = cache
         self.timing = {}
         self.count = 0
+        self.post = None
+
+    def start_post(self):
+        self.post = Timing()
+
+    def end_post(self):
+        self.post.done()
 
     def __setitem__(self, key, value):
         self.cache[key] = value
@@ -174,11 +181,17 @@ class TimingAwareCache(object):
 
     def report(self, over=0):
         all_timing = sorted(self.timing.values(), key=lambda t: t.start_order)
-        if not len(all_timing) or all_timing[0].total <= over:
+        if not len(all_timing):
+            return
+        total_post = 0 if self.post is None else self.post.total
+        total_terms = all_timing[0].total
+        if (total_terms + total_post) < over:
             return
         indent = 0
         order = [all_timing[0].end_order]
-        logger.info('Catalog query toke {:.4f}.'.format(all_timing[0].total))
+        logger.info(
+            'Catalog query toke {:.4f} for terms, {:.4f} to finish.'.format(
+                total_terms, total_post))
         for timing in all_timing:
             if timing.start_order < order[-1]:
                 indent += 4
@@ -207,13 +220,17 @@ class Query(object):
         else:
             cache = {}
 
+        timer = None
         if timing is not False:
-            cache = TimingAwareCache(cache)
+            timer = cache = TimingAwareCache(cache)
         all_results = query.cached_apply(cache, context)
-        if timing is not False:
-            cache.report(over=timing)
         if not all_results:
+            if timer is not None:
+                timer.report(over=timing)
             return Results(context, [], [])
+
+        if timer is not None:
+            timer.start_post()
 
         is_iterator = False
         if sort_field is not None:
@@ -253,6 +270,10 @@ class Query(object):
 
         if is_iterator:
             selected_results = list(selected_results)
+
+        if timer is not None:
+            timer.end_post()
+            timer.report(over=timing)
 
         return Results(context, all_results, selected_results)
 
