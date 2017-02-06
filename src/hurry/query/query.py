@@ -209,10 +209,9 @@ class Query(object):
 
         if timing is not False:
             cache = TimingAwareCache(cache)
-
         all_results = query.cached_apply(cache, context)
         if timing is not False:
-            cache.report()
+            cache.report(over=timing)
         if not all_results:
             return Results(context, [], [])
 
