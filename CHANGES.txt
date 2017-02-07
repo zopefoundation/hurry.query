@@ -4,8 +4,9 @@ CHANGES
 2.0.2 (unreleased)
 ------------------
 
-- Nothing changed yet.
-
+- Add the possibility to time how long a query takes. It can be
+  controlled with the new ``timing`` option to ``searchResults`` or
+  the ``HURRY_QUERY_TIMING`` environment variable.
 
 2.0.1 (2016-09-08)
 ------------------

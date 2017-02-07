@@ -20,6 +20,8 @@ $Id$
 """
 import itertools
 import logging
+import os
+import time
 
 from BTrees.IFBTree import IFSet
 from BTrees.IFBTree import weightedIntersection
@@ -39,6 +41,12 @@ import transaction
 import threading
 
 logger = logging.getLogger('hurry.query')
+HURRY_QUERY_TIMING = False
+if 'HURRY_QUERY_TIMING' in os.environ:
+    try:
+        HURRY_QUERY_TIMING = float(os.environ['HURRY_QUERY_TIMING'])
+    except (ValueError, TypeError):
+        pass
 
 
 class Cache(threading.local):
@@ -122,12 +130,86 @@ class Results(object):
             yield self.get(uid)
 
 
+
+class Timing(object):
+
+    def __init__(self, key=None, order=0):
+        self.key = key
+        self.start = time.clock()
+        self.start_order = order
+        self.end = None
+        self.end_order = None
+
+    def done(self, order=0):
+        self.end = time.clock()
+        self.end_order = order
+
+    @property
+    def total(self):
+        if self.end is not None:
+            return self.end - self.start
+        return None
+
+
+class TimingAwareCache(object):
+
+    def __init__(self, cache):
+        self.cache = cache
+        self.timing = {}
+        self.count = 0
+        self.post = None
+
+    def start_post(self):
+        self.post = Timing()
+
+    def end_post(self):
+        self.post.done()
+
+    def __setitem__(self, key, value):
+        self.cache[key] = value
+        timing = self.timing.get(key)
+        if timing is not None:
+            timing.done(self.count)
+            self.count += 1
+
+    def get(self, key):
+        value = self.cache.get(key)
+        if value is None:
+            self.timing[key] = Timing(key, self.count)
+            self.count += 1
+        return value
+
+    def report(self, over=0):
+        all_timing = sorted(self.timing.values(), key=lambda t: t.start_order)
+        if not len(all_timing):
+            return
+        total_post = 0 if self.post is None else self.post.total
+        total_terms = all_timing[0].total
+        if (total_terms + total_post) < over:
+            return
+        indent = 0
+        order = [all_timing[0].end_order]
+        logger.info(
+            'Catalog query toke {:.4f}s for terms, {:.4f}s to finish.'.format(
+                total_terms, total_post))
+        for timing in all_timing:
+            if timing.start_order < order[-1]:
+                indent += 4
+                order.append(timing.end_order)
+            logger.info(
+                '{} {:.4f}s: {}.'.format(
+                    ' ' * indent, timing.total, str(timing.key)))
+            if timing.end_order > order[-1]:
+                indent -= 4
+                order.pop()
+
+
 class Query(object):
     implements(interfaces.IQuery)
 
     def searchResults(
             self, query, context=None, sort_field=None, limit=None,
-            reverse=False, start=0, caching=False):
+            reverse=False, start=0, caching=False, timing=HURRY_QUERY_TIMING):
 
         if context is None:
             context = getSiteManager()
@@ -138,9 +220,17 @@ class Query(object):
         else:
             cache = {}
 
+        timer = None
+        if timing is not False:
+            timer = cache = TimingAwareCache(cache)
         all_results = query.cached_apply(cache, context)
         if not all_results:
+            if timer is not None:
+                timer.report(over=timing)
             return Results(context, [], [])
+
+        if timer is not None:
+            timer.start_post()
 
         is_iterator = False
         if sort_field is not None:
@@ -180,6 +270,10 @@ class Query(object):
 
         if is_iterator:
             selected_results = list(selected_results)
+
+        if timer is not None:
+            timer.end_post()
+            timer.report(over=timing)
 
         return Results(context, all_results, selected_results)
 
