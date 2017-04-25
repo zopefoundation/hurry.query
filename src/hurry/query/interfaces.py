@@ -48,7 +48,7 @@ class IQuery(Interface):
             caching. The cache for multiple `searchResults()` calls is
             invalidated at the end of the transaction.
 
-            False to cache only for individual `searchResults()` calls.
+            `False` to cache only for individual `searchResults()` calls.
 
             Or a `dict`-like object where invalidation is handled by the
             caller of the multiple `searchResults()` call.
