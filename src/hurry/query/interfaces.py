@@ -42,7 +42,16 @@ class IQuery(Interface):
         result in set to the given start position.
 
         Optionally provide a `caching` parameter to cache terms result
-        across multiple search queries.
+        across multiple search queries. Accepted parameter values are:
+
+            `True` for `threading.local` based and transaction boundary-aware
+            caching. The cache for multiple `searchResults()` calls is
+            invalidated at the end of the transaction.
+
+            False to cache only for individual `searchResults()` calls.
+
+            Or a `dict`-like object where invalidation is handled by the
+            caller of the multiple `searchResults()` call.
         """
 
 

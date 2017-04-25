@@ -130,7 +130,6 @@ class Results(object):
             yield self.get(uid)
 
 
-
 class Timing(object):
 
     def __init__(self, key=None, order=0):
@@ -215,10 +214,14 @@ class Query(object):
             context = getSiteManager()
         else:
             context = IComponentLookup(context)
-        if caching:
+
+        if caching is True:
             cache = transaction_cache.use(context)
-        else:
+        elif caching is False:
             cache = {}
+        else:
+            # A custom cache object was injected, use it.
+            cache = caching
 
         timer = None
         if timing is not False:
