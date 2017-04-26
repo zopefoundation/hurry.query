@@ -4,8 +4,9 @@ CHANGES
 2.2 (unreleased)
 ----------------
 
-- Nothing changed yet.
-
+- The caching option to searchResults now accepts a dict-like value and it
+  will use that to allow for caching results over multiple searchResults()
+  calls. The cache invalidation then is the responsibility of the caller.
 
 2.1 (2017-02-07)
 ----------------
@@ -18,7 +19,6 @@ CHANGES
 ------------------
 
 - Fix log line in Text term for invalid text search.
-
 
 2.0 (2016-09-07)
 ----------------
@@ -47,7 +47,6 @@ CHANGES
 ----------------
 
 * Add support for an All query.
-
 
 1.1.1 (2012-06-22)
 ------------------
