@@ -1,7 +1,7 @@
 CHANGES
 =======
 
-2.2 (unreleased)
+2.2 (2017-04-26)
 ----------------
 
 - The caching option to searchResults now accepts a dict-like value and it
