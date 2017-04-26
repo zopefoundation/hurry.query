@@ -71,7 +71,7 @@ class ITerm(Interface):
         """
 
 
-class Results(Interface):
+class IResults(Interface):
 
     total = Attribute(
         'Total number of results (without start/limit restrictions)')

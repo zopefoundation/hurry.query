@@ -4,8 +4,10 @@ CHANGES
 2.3 (unreleased)
 ----------------
 
-- Nothing changed yet.
-
+- Define a "no result" result object, useful for case where application code
+  has an custom API for building query terms, but this application code
+  decides there is no query. Callers might still expect a result-like
+  object.
 
 2.2 (2017-04-26)
 ----------------

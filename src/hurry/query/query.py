@@ -99,7 +99,7 @@ transaction_cache = Cache(transaction.manager)
 
 
 class Results(object):
-    implements(interfaces.IQuery)
+    implements(interfaces.IResults)
 
     def __init__(self, context, all_results, selected_results):
         self.context = context
@@ -128,6 +128,25 @@ class Results(object):
     def __iter__(self):
         for uid in self.__selected:
             yield self.get(uid)
+
+
+class NoResults(object):
+    implements(interfaces.IResults)
+
+    count = 0
+    total = 0
+
+    def first(self):
+        return None
+
+    def __len__(self):
+        return 0
+
+    def __iter__(self):
+        raise StopIteration()
+
+
+no_results = NoResults()
 
 
 class Timing(object):

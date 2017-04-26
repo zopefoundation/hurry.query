@@ -16,3 +16,4 @@ $Id$
 """
 from hurry.query.query import All, And, Or, Eq, NotEq, Difference, Objects
 from hurry.query.query import Between, In, Ge, Le, Text
+from hurry.query.query import no_results
