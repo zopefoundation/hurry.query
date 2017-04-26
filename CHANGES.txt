@@ -1,7 +1,7 @@
 CHANGES
 =======
 
-2.3 (unreleased)
+2.3 (2017-04-26)
 ----------------
 
 - Define a "no result" result object, useful for case where application code
