@@ -4,8 +4,7 @@ CHANGES
 2.4 (unreleased)
 ----------------
 
-- Nothing changed yet.
-
+- Don't throw a TypeError slicing unsorted results, fixes #6
 
 2.3 (2017-04-26)
 ----------------

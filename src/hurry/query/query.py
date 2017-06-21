@@ -286,8 +286,9 @@ class Query(object):
                 selected_results = reversed(selected_results)
                 is_iterator = True
             if limit or start:
+                slice_end = limit and start + limit or None
                 selected_results = itertools.islice(
-                    selected_results, start, start + limit)
+                    selected_results, start, slice_end)
                 is_iterator = True
 
         if is_iterator:
