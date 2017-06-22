@@ -547,6 +547,14 @@ the tested index is deterministic enough to be used as a proper test).
   [1, 2]
 
   >>> f1 = ('catalog1', 'f1')
+  >>> displayResult(Eq(f1, 'a'), start=1)
+  [2, 6]
+
+  >>> f1 = ('catalog1', 'f1')
+  >>> displayResult(Eq(f1, 'a'), start=1, limit=1)
+  [2]
+
+  >>> f1 = ('catalog1', 'f1')
   >>> displayResult(Eq(f1, 'a'), limit=2, reverse=True)
   [6, 2]
 
