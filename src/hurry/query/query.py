@@ -288,7 +288,7 @@ class Query(object):
                         'Index {} in catalog {} does not support '
                         'sorting.'.format(index_name, catalog_name))
             sort_limit = None
-            if limit is not None:
+            if limit is not None and start:
                 sort_limit = start + limit
             selected_results = sort_field.sort(
                 all_results,
