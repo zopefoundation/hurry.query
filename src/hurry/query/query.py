@@ -290,9 +290,11 @@ class Query(object):
                     raise ValueError(
                         'Index {} in catalog {} does not support '
                         'sorting.'.format(index_name, catalog_name))
-            sort_limit = limit
-            if start:
-                sort_limit = start + limit
+            sort_limit = None
+            if limit:
+                sort_limit = limit
+                if start:
+                    sort_limit += start
             selected_results = sort_field.sort(
                 all_results,
                 limit=sort_limit,
