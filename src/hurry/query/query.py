@@ -99,7 +99,6 @@ class Cache(threading.local):
 transaction_cache = Cache(transaction.manager)
 
 
-
 class Locator(object):
 
     def __init__(self, container, get):
@@ -115,15 +114,19 @@ class Locator(object):
 class Results(object):
     implements(interfaces.IResults)
 
-    def __init__(self, context, all_results, selected_results, locate_to=None):
+    def __init__(self, context, all_results, selected_results,
+                 wrapper=None, locate_to=None):
         self.context = context
         self.locate_to = locate_to
+        self.wrapper = wrapper
         self.__all = all_results
         self.__selected = selected_results
 
     @Lazy
     def get(self):
         get = getUtility(IIntIds, '', self.context).getObject
+        if self.wrapper is not None:
+            get = (lambda get: lambda id: self.wrapper(get(id)))(get)
         if self.locate_to is not None:
             return Locator(self.locate_to, get)
         return get
@@ -246,7 +249,7 @@ class Query(object):
     def searchResults(
             self, query, context=None, sort_field=None, limit=None,
             reverse=False, start=0, caching=False, timing=HURRY_QUERY_TIMING,
-            locate_to=None):
+            wrapper=None, locate_to=None):
 
         if context is None:
             context = getSiteManager()
@@ -287,8 +290,8 @@ class Query(object):
                     raise ValueError(
                         'Index {} in catalog {} does not support '
                         'sorting.'.format(index_name, catalog_name))
-            sort_limit = None
-            if limit is not None and start:
+            sort_limit = limit
+            if start:
                 sort_limit = start + limit
             selected_results = sort_field.sort(
                 all_results,
@@ -319,7 +322,8 @@ class Query(object):
             timer.end_post()
             timer.report(over=timing)
 
-        return Results(context, all_results, selected_results, locate_to)
+        return Results(
+            context, all_results, selected_results, wrapper, locate_to)
 
 
 class Term(object):
