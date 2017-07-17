@@ -67,6 +67,7 @@ setup(
         'zope.index',
         'zope.interface',
         'zope.intid',
+        'zope.location',
     ],
     tests_require=tests_require,
     extras_require={'test': tests_require},

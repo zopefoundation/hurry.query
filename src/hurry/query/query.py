@@ -35,6 +35,7 @@ from zope.interface import implements
 from zope.intid.interfaces import IIntIds
 from zope.index.interfaces import IIndexSort
 from zope.index.text.parsetree import ParseError
+from zope.location.location import located, LocationProxy
 from hurry.query import interfaces
 
 import transaction
@@ -98,17 +99,37 @@ class Cache(threading.local):
 transaction_cache = Cache(transaction.manager)
 
 
+class Locator(object):
+
+    def __init__(self, container, get):
+        self.container = container
+        self.get = get
+
+    def __call__(self, oid):
+        contained = self.get(oid)
+        return located(
+            LocationProxy(contained), self.container, contained.__name__)
+
+
 class Results(object):
     implements(interfaces.IResults)
 
-    def __init__(self, context, all_results, selected_results):
+    def __init__(self, context, all_results, selected_results,
+                 wrapper=None, locate_to=None):
         self.context = context
+        self.locate_to = locate_to
+        self.wrapper = wrapper
         self.__all = all_results
         self.__selected = selected_results
 
     @Lazy
     def get(self):
-        return getUtility(IIntIds, '', self.context).getObject
+        get = getUtility(IIntIds, '', self.context).getObject
+        if self.wrapper is not None:
+            get = (lambda get: lambda id: self.wrapper(get(id)))(get)
+        if self.locate_to is not None:
+            return Locator(self.locate_to, get)
+        return get
 
     @property
     def total(self):
@@ -143,7 +164,7 @@ class NoResults(object):
         return 0
 
     def __iter__(self):
-        raise StopIteration()
+        return iter([])
 
 
 no_results = NoResults()
@@ -227,7 +248,8 @@ class Query(object):
 
     def searchResults(
             self, query, context=None, sort_field=None, limit=None,
-            reverse=False, start=0, caching=False, timing=HURRY_QUERY_TIMING):
+            reverse=False, start=0, caching=False, timing=HURRY_QUERY_TIMING,
+            wrapper=None, locate_to=None):
 
         if context is None:
             context = getSiteManager()
@@ -249,7 +271,7 @@ class Query(object):
         if not all_results:
             if timer is not None:
                 timer.report(over=timing)
-            return Results(context, [], [])
+            return no_results
 
         if timer is not None:
             timer.start_post()
@@ -259,17 +281,21 @@ class Query(object):
             # Like in zope.catalog's searchResults we require the given
             # index to sort on to provide IIndexSort. We bail out if
             # the index does not.
-            catalog_name, index_name = sort_field
-            catalog = getUtility(ICatalog, catalog_name, context)
-            index = catalog[index_name]
-            if not IIndexSort.providedBy(index):
-                raise ValueError(
-                    'Index {} in catalog {} does not support '
-                    'sorting.'.format(index_name, catalog_name))
+            if not IIndexSort.providedBy(sort_field):
+                assert isinstance(sort_field, tuple) and len(sort_field) == 2
+                catalog_name, index_name = sort_field
+                catalog = getUtility(ICatalog, catalog_name, context)
+                sort_field = catalog[index_name]
+                if not IIndexSort.providedBy(sort_field):
+                    raise ValueError(
+                        'Index {} in catalog {} does not support '
+                        'sorting.'.format(index_name, catalog_name))
             sort_limit = None
-            if limit is not None:
-                sort_limit = start + limit
-            selected_results = index.sort(
+            if limit:
+                sort_limit = limit
+                if start:
+                    sort_limit += start
+            selected_results = sort_field.sort(
                 all_results,
                 limit=sort_limit,
                 reverse=reverse)
@@ -298,7 +324,8 @@ class Query(object):
             timer.end_post()
             timer.report(over=timing)
 
-        return Results(context, all_results, selected_results)
+        return Results(
+            context, all_results, selected_results, wrapper, locate_to)
 
 
 class Term(object):

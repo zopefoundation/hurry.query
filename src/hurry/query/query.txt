@@ -37,6 +37,8 @@ And its implementation::
   ...         self.t2 = t2
   ...     def __cmp__(self, other):
   ...         return cmp(self.id, other.id)
+  ...     def __repr__(self):
+  ...         return '<Content "{}">'.format(self.id)
 
 The id attribute is just so we can identify objects we find again
 easily. By including the __cmp__ method we make sure search results
@@ -494,39 +496,49 @@ performing any sorting here ourselves.
   >>> def displayResult(q, context=None, **kw):
   ...     query = getUtility(IQuery)
   ...     r = query.searchResults(q, context, **kw)
-  ...     return [e.id for e in r]
+  ...     return [e for e in r]
 
 Without using sorting in the query itself, the resultset has an undefined
 order. We "manually" sort the results here to have something testable.
 
   >>> f1 = ('catalog1', 'f1')
   >>> [r for r in sorted(displayResult(Eq(f1, 'a')))]
-  [1, 2, 6]
+  [<Content "1">, <Content "2">, <Content "6">]
 
 Now we sort on the f2 index.
 
   >>> f1 = ('catalog1', 'f1')
   >>> displayResult(Eq(f1, 'a'), sort_field=('catalog1', 'f2'))
-  [6, 1, 2]
+  [<Content "6">, <Content "1">, <Content "2">]
 
 Reverse the order.
 
   >>> f1 = ('catalog1', 'f1')
   >>> displayResult(Eq(f1, 'a'), sort_field=('catalog1', 'f2'), reverse=True)
-  [2, 1, 6]
+  [<Content "2">, <Content "1">, <Content "6">]
 
 We can limit the amount of found items.
 
   >>> f1 = ('catalog1', 'f1')
   >>> displayResult(Eq(f1, 'a'), sort_field=('catalog1', 'f2'), limit=2)
-  [6, 1]
+  [<Content "6">, <Content "1">]
+
+  >>> f1 = ('catalog1', 'f1')
+  >>> displayResult(Eq(f1, 'a'), sort_field=('catalog1', 'f2'), limit=2, start=1)
+  [<Content "1">, <Content "2">]
 
 We can limit the reversed resultset too.
 
   >>> f1 = ('catalog1', 'f1')
   >>> displayResult(
   ...   Eq(f1, 'a'), sort_field=('catalog1', 'f2'), limit=2, reverse=True)
-  [2, 1]
+  [<Content "2">, <Content "1">]
+
+You can directly pass the index as a sort field instead of a tuple:
+
+  >>> f1 = ('catalog1', 'f1')
+  >>> displayResult(Eq(f1, 'a'), sort_field=catalog['f2'])
+  [<Content "6">, <Content "1">, <Content "2">]
 
 Whenever a field is used for sorting that does not support is, an error is
 raised.
@@ -544,20 +556,59 @@ the tested index is deterministic enough to be used as a proper test).
 
   >>> f1 = ('catalog1', 'f1')
   >>> displayResult(Eq(f1, 'a'), limit=2)
-  [1, 2]
+  [<Content "1">, <Content "2">]
 
   >>> f1 = ('catalog1', 'f1')
   >>> displayResult(Eq(f1, 'a'), start=1)
-  [2, 6]
+  [<Content "2">, <Content "6">]
 
   >>> f1 = ('catalog1', 'f1')
   >>> displayResult(Eq(f1, 'a'), start=1, limit=1)
-  [2]
+  [<Content "2">]
 
   >>> f1 = ('catalog1', 'f1')
   >>> displayResult(Eq(f1, 'a'), limit=2, reverse=True)
-  [6, 2]
+  [<Content "6">, <Content "2">]
 
+
+Wrapper
+-------
+
+You can define a wrapper to be called on each result:
+
+  >>> from zope.location import Location
+  >>> class Wrapper(Location):
+  ...    def __init__(self, parent):
+  ...       self.parent = parent
+  ...    def __repr__(self):
+  ...       return '<Wrapper "{}">'.format(self.parent.id)
+
+  >>> f1 = ('catalog1', 'f1')
+  >>> displayResult(Eq(f1, 'a'), wrapper=Wrapper)
+  [<Wrapper "1">, <Wrapper "2">, <Wrapper "6">]
+
+Locate to
+---------
+
+You can define a location where the results should be located with a proxy:
+
+  >>> def displayParent(q, context=None, **kw):
+  ...     query = getUtility(IQuery)
+  ...     r = query.searchResults(q, context, **kw)
+  ...     return [(e.__parent__, e) or None for e in r]
+
+  >>> f1 = ('catalog1', 'f1')
+  >>> displayParent(Eq(f1, 'a'), limit=2)
+  [(None, <Content "1">), (None, <Content "2">)]
+
+  >>> parent = Content('parent')
+  >>> displayParent(Eq(f1, 'a'), limit=2, locate_to=parent)
+  [(<Content "parent">, <Content "1">), (<Content "parent">, <Content "2">)]
+
+This can be used with a wrapper:
+
+  >>> displayParent(Eq(f1, 'a'), limit=2, wrapper=Wrapper, locate_to=parent)
+  [(<Content "parent">, <Wrapper "1">), (<Content "parent">, <Wrapper "2">)]
 
 Text index
 ----------
@@ -567,7 +618,7 @@ You can search on text, here all the items that contains better::
   >>> from hurry.query import Text
   >>> t1 = ('catalog1', 't')
   >>> displayResult(Text(t1, 'better'))
-  [1, 2, 3, 4]
+  [<Content "1">, <Content "2">, <Content "3">, <Content "4">]
 
 Invalid text query returns an empty results::
 
@@ -583,7 +634,7 @@ have a as f1::
 
   >>> from hurry.query import Difference
   >>> displayResult(Difference(Text(t1, 'better'), Eq(f1, 'a')))
-  [3, 4]
+  [<Content "3">, <Content "4">]
 
 
 There is a special term that allows to mix objects with catalog
@@ -591,4 +642,4 @@ queries::
 
   >>> from hurry.query import Objects
   >>> displayResult(Objects(content))
-  [1, 2, 3, 4, 5, 6]
+  [<Content "1">, <Content "2">, <Content "3">, <Content "4">, <Content "5">, <Content "6">]
