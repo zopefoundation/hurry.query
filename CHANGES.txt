@@ -4,8 +4,12 @@ CHANGES
 2.5 (unreleased)
 ----------------
 
-- Nothing changed yet.
+- `sort_field` can be a index name or an object providing `IIndexSort` itself.
 
+- `searchResults()` accepts optional parameter `locate_to` and `wrapper`. The
+  `locate_to` is used as the `__parent__` for the location proxy put arround
+  the resulting objects. The `wrapper` is a callable callback that should
+  accept one argument for its parameter.
 
 2.4 (2017-06-22)
 ----------------
