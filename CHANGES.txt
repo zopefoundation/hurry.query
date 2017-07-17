@@ -1,7 +1,7 @@
 CHANGES
 =======
 
-2.5 (unreleased)
+2.5 (2017-07-17)
 ----------------
 
 - `sort_field` can be a index name or an object providing `IIndexSort` itself.
