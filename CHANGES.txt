@@ -4,8 +4,7 @@ CHANGES
 2.6 (unreleased)
 ----------------
 
-- Nothing changed yet.
-
+- Update dependencies not to rely on ZODB3 anymore.
 
 2.5 (2017-07-17)
 ----------------
