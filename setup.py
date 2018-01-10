@@ -25,7 +25,7 @@ def read(*rnames):
     return text
 
 tests_require = [
-    'zope.testing',
+    'zope.container',
     ]
 
 setup(
@@ -58,8 +58,9 @@ setup(
     },
     zip_safe=False,
     install_requires=[
-        'ZODB3',
+        'BTrees',
         'setuptools',
+        'transaction',
         'zc.catalog',
         'zope.cachedescriptors',
         'zope.catalog',
