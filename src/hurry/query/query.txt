@@ -282,10 +282,68 @@ contain all of the values listed::
   >>> displayQuery(set.AllOf(f1, ['a', 'c']))
   [1, 6]
 
-We can combine this with other queries::
+The next interesting set of queries allows you to make evaluations of the
+values. For example, you can ask for all objects between a certain set of
+values:
+
+  >>> displayQuery(set.SetBetween(f1, 'a', 'c'))
+  [1, 2, 3, 4, 5, 6]
+
+  >>> displayQuery(set.SetBetween(f1, 'a', 'c', exclude_min=True))
+  [1, 3, 4, 5, 6]
+
+  >>> displayQuery(set.SetBetween(f1, 'b', 'c', exclude_max=True))
+  [1, 3, 5]
+
+  >>> displayQuery(set.SetBetween(f1, 'a', 'c',
+  ...                             exclude_min=True, exclude_max=True))
+  [1, 3, 5]
+
+You can also leave out one end of the range:
+
+  >>> displayQuery(set.SetBetween(f1, 'c', None))
+  [1, 4, 5, 6, 7]
+  >>> displayQuery(set.SetBetween(f1, None, 'c', exclude_max=True))
+  [1, 2, 3, 5, 6]
+
+You can chain set queries:
 
   >>> displayQuery(set.AnyOf(f1, ['a']) & Eq(f2, 1))
   [1, 2]
+
+The ``set` module also supports ``zc.catalog`` extents. The first query is
+``ExtentAny``, which returns all douments matching the extent. If the the
+extent is ``None``, all document ids are returned:
+
+  >>> displayQuery(set.ExtentAny(f1, None))
+  [1, 2, 3, 4, 5, 6, 7]
+
+If we now create an extent that is only in the scope of the first four
+documents,
+
+  >>> from zc.catalog.extentcatalog import FilterExtent
+  >>> extent = FilterExtent(lambda extent, uid, obj: True)
+  >>> for i in range(4):
+  ...     extent.add(i, i)
+
+then only the first four are returned:
+
+  >>> displayQuery(set.ExtentAny(f1, extent))
+  [1, 2, 3, 4]
+
+The opposite query is the ``ExtentNone`` query, which returns all ids in the
+extent that are *not* in the index:
+
+  >>> id = intid.register(Content(9, 'b'))
+  >>> id = intid.register(Content(10, 'c'))
+  >>> id = intid.register(Content(11, 'a'))
+
+  >>> extent = FilterExtent(lambda extent, uid, obj: True)
+  >>> for i in range(11):
+  ...     extent.add(i, i)
+
+  >>> displayQuery(set.ExtentNone(f1, extent))
+  [8, 9, 10, 11]
 
 
 ValueIndex queries
@@ -386,7 +444,10 @@ You can also use greater-equals and lesser-equals for the same purpose:
   >>> displayQuery(value.Le(f1, 'c'))
   [1, 2, 3, 5, 6]
 
-Of course, you can chain those queries with the others as demonstrated before.
+You can chain value queries:
+
+  >>> displayQuery(value.Ge(f1, 'c') & value.Le(f1, 'c'))
+  [3, 5]
 
 The ``value`` module also supports ``zc.catalog`` extents. The first query is
 ``ExtentAny``, which returns all douments matching the extent. If the the
