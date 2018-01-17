@@ -1,6 +1,6 @@
 ##############################################################################
 #
-# Copyright (c) 2005-2008 Zope Foundation and Contributors.
+# Copyright (c) 2005-2009 Zope Foundation and Contributors.
 # All Rights Reserved.
 #
 # This software is subject to the provisions of the Zope Public License,
@@ -14,11 +14,6 @@
 """
 $Id$
 """
-import unittest
-import doctest
-
-
-def test_suite():
-    return unittest.TestSuite((
-        doctest.DocFileSuite('query.txt'),
-        ))
+from hurry.query.query import All, And, Or, Eq, NotEq, Difference, Objects
+from hurry.query.query import Between, In, Ge, Le, Text
+from hurry.query.query import no_results
