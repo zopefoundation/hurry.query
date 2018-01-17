@@ -631,6 +631,75 @@ the tested index is deterministic enough to be used as a proper test).
   >>> displayResult(Eq(f1, 'a'), limit=2, reverse=True)
   [<Content "6">, <Content "2">]
 
+Result counters
+---------------
+
+Result objects provide metadata about the result.
+
+Define a convenience function for obtaining a result.
+
+  >>> def getResult(q, context=None, **kw):
+  ...     query = getUtility(IQuery)
+  ...     return query.searchResults(q, context, **kw)
+
+Performing a query with a sort_field gives a well-defined result:
+
+  >>> f1 = ('catalog1', 'f1')
+  >>> result = getResult(Eq(f1, 'a'), sort_field=catalog['f1'])
+  >>> [e for e in result]
+  [<Content "1">, <Content "2">, <Content "6">]
+
+We can access 'total' and 'count' properties, and 'first()' on the result:
+
+  >>> result.total
+  3
+  >>> result.count
+  3
+  >>> result.first()
+  <Content "1">
+
+Changing 'start' is reflected in the returned data:
+
+>>> result = getResult(Eq(f1, 'a'), sort_field=catalog['f1'], start=1)
+  >>> [e for e in result]
+  [<Content "2">, <Content "6">]
+
+It also changes 'count' and 'first()':
+
+  >>> result.count
+  2
+  >>> result.first()
+  <Content "2">
+
+But 'total' still reflects all matches, including the hidden first one:
+
+  >>> result.total
+  3
+
+Adding a limit:
+
+  >>> result = getResult(Eq(f1, 'a'), sort_field=catalog['f1'], start=1,
+  ...                    limit=1)
+  >>> [e for e in result]
+  [<Content "2">]
+  >>> result.total
+  3
+  >>> result.count
+  1
+  >>> result.first()
+  <Content "2">
+
+The same accessors are available on an empty result:
+
+  >>> result = getResult(Eq(f1, 'foo'), sort_field=catalog['f1'])
+  >>> [e for e in result]
+  []
+  >>> result.total
+  0
+  >>> result.count
+  0
+  >>> result.first() is None
+  True
 
 Wrapper
 -------
