@@ -16,12 +16,19 @@
 $Id$
 """
 import os
+import sys
 from setuptools import setup, find_packages
+
+if sys.version_info.major > 2:
+    import html
 
 
 def read(*rnames):
     text = open(os.path.join(os.path.dirname(__file__), *rnames)).read()
-    text = unicode(text, 'utf-8').encode('ascii', 'xmlcharrefreplace')
+    if sys.version_info.major == 2:
+        text = unicode(text, 'utf-8').encode('ascii', 'xmlcharrefreplace')
+    else:
+        text = html.escape(text)
     return text
 
 tests_require = [

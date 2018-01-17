@@ -500,9 +500,9 @@ class Objects(Term):
 
 class IndexTerm(Term):
 
-    def __init__(self, (catalog_name, index_name)):
-        self.catalog_name = catalog_name
-        self.index_name = index_name
+    def __init__(self, catalog_name__and__index_name):
+        self.catalog_name = catalog_name__and__index_name[0]
+        self.index_name = catalog_name__and__index_name[1]
 
     def getIndex(self, context):
         catalog = getUtility(ICatalog, self.catalog_name, context)
