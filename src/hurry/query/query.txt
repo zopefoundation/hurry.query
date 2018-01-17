@@ -224,8 +224,11 @@ A combination of 'In' and '&'::
 SetIndex queries
 ----------------
 
-The SetIndex is defined in zc.catalog. Let's make a catalog which uses
-it::
+The SetIndex is defined in zc.catalog.
+
+  >>> from hurry.query import set
+
+Let's make a catalog which uses it::
 
   >>> intid = DummyIntId()
   >>> provideUtility(intid, zope.intid.interfaces.IIntIds)
@@ -256,35 +259,32 @@ And catalog them now::
 
 We can query for all indexes objects:
 
-  >>> from hurry.query.set import All
-  >>> displayQuery(All(f1))
+  >>> displayQuery(set.All(f1))
   [1, 2, 3, 4, 5, 6, 7]
 
 Now do a a 'any of' query, which returns all documents that
 contain any of the values listed::
 
-  >>> from hurry.query.set import AnyOf
-  >>> displayQuery(AnyOf(f1, ['a', 'c']))
+  >>> displayQuery(set.AnyOf(f1, ['a', 'c']))
   [1, 2, 4, 5, 6]
-  >>> displayQuery(AnyOf(f1, ['c', 'b']))
+  >>> displayQuery(set.AnyOf(f1, ['c', 'b']))
   [1, 3, 4, 5, 6]
-  >>> displayQuery(AnyOf(f1, ['a']))
+  >>> displayQuery(set.AnyOf(f1, ['a']))
   [1, 2, 6]
 
 Do a 'all of' query, which returns all documents that
 contain all of the values listed::
 
-  >>> from hurry.query.set import AllOf
-  >>> displayQuery(AllOf(f1, ['a']))
+  >>> displayQuery(set.AllOf(f1, ['a']))
   [1, 2, 6]
-  >>> displayQuery(AllOf(f1, ['a', 'b']))
+  >>> displayQuery(set.AllOf(f1, ['a', 'b']))
   [1]
-  >>> displayQuery(AllOf(f1, ['a', 'c']))
+  >>> displayQuery(set.AllOf(f1, ['a', 'c']))
   [1, 6]
 
 We can combine this with other queries::
 
-  >>> displayQuery(AnyOf(f1, ['a']) & Eq(f2, 1))
+  >>> displayQuery(set.AnyOf(f1, ['a']) & Eq(f2, 1))
   [1, 2]
 
 
