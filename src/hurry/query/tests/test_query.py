@@ -119,6 +119,37 @@ class QueryTest(unittest.TestCase):
             query.All(f1)),
             [1, 2, 3, 4, 5, 6])
 
+    def test_Term_apply(self):
+        term = query.Term()
+        with self.assertRaises(NotImplementedError):
+            term.apply(None)
+
+    def test_Term_dunder_rand(self):
+        class AndDisabledAll(query.All):
+
+            def __and__(self, other):
+                return NotImplemented
+
+        left = AndDisabledAll(f1)
+        right = query.All(f1)
+
+        self.assertEqual(self.displayQuery(
+            left & right),
+            [1, 2, 3, 4, 5, 6])
+
+    def test_Term_dunder_ror(self):
+        class OrDisabledAll(query.All):
+
+            def __or__(self, other):
+                return NotImplemented
+
+        left = OrDisabledAll(f1)
+        right = query.All(f1)
+
+        self.assertEqual(self.displayQuery(
+            left | right),
+            [1, 2, 3, 4, 5, 6])
+
     def test_And_one_result(self):
         self.assertEqual(self.displayQuery(
             query.And(query.All(f1))),
