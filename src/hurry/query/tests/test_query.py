@@ -299,6 +299,64 @@ class TimingAwareCacheTest(QueryTestBase):
         self.assertTrue(records[2].msg.endswith('  ?: foobar.'))
 
 
+class QueryTest(QueryTestBase):
+
+    def test_injected_caching(self):
+        class MockCaching(object):
+            _cache = dict()
+            _get = 0
+            _set = 0
+
+            def get(self, key):
+                self._get += 1
+                return self._cache.get(key)
+
+            def __setitem__(self, key, value):
+                self._set += 1
+                self._cache[key] = value
+
+        caching = MockCaching()
+        self.searchResults(query.And(query.All(f1)), caching=caching)
+        self.assertEqual(caching._get, 2)
+        self.assertEqual(caching._set, 2)
+
+        self.searchResults(query.And(query.All(f1)), caching=caching)
+        self.assertEqual(caching._get, 3)
+        self.assertEqual(caching._set, 2)
+        self.assertEqual(
+            sorted(caching._cache.keys()),
+            [('all', 'catalog1', 'f1'), ('and', ('all', 'catalog1', 'f1'))])
+        self.assertEqual(
+            [v.keys() for v in caching._cache.values()],
+            [[0, 1, 2, 3, 4, 5], [0, 1, 2, 3, 4, 5]])
+
+    def test_timing(self):
+        with LogCapture() as logged:
+            self.searchResults(
+                query.And(query.All(f1)), timing=.00000001)
+            records = logged.records
+
+        self.assertEqual(len(records), 3)
+        self.assertIn("('and', ('all', 'catalog1', 'f1')", records[1].msg)
+        self.assertIn("('all', 'catalog1', 'f1')", records[2].msg)
+
+    def test_timing_cutoff(self):
+        with LogCapture() as logged:
+            self.searchResults(query.And(query.All(f1)), timing=5)
+            records = logged.records
+
+        self.assertEqual(len(records), 0)
+
+    def test_timing_noresult(self):
+        with LogCapture() as logged:
+            results = self.displayQuery(
+                query.And(query.Eq(f1, 'foo')), timing=.00000001)
+            records = logged.records
+
+        self.assertEqual(results, [])
+        self.assertEqual(len(records), 3)
+
+
 class TermsTest(QueryTestBase):
 
     def test_Term_apply(self):

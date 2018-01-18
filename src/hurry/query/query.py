@@ -40,7 +40,7 @@ from hurry.query import interfaces
 
 
 logger = logging.getLogger('hurry.query')
-HURRY_QUERY_TIMING = False
+HURRY_QUERY_TIMING = 0.0  # log queries taking longer than this, in seconds
 if 'HURRY_QUERY_TIMING' in os.environ:
     try:
         HURRY_QUERY_TIMING = float(os.environ['HURRY_QUERY_TIMING'])
@@ -213,7 +213,7 @@ class Query(object):
             cache = caching
 
         timer = None
-        if timing is not False:
+        if timing:
             timer = cache = TimingAwareCache(cache)
         all_results = query.cached_apply(cache, context)
         if not all_results:
