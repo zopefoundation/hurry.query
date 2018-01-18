@@ -140,3 +140,13 @@ class QueryTest(unittest.TestCase):
         self.assertEqual(self.displayQuery(
             query.And(query.Eq(f1, 'a'), query.Eq(f1, 'X'), weighted=True)),
             [])
+
+    def test_Or_one_empty_result(self):
+        self.assertEqual(self.displayQuery(
+            query.Or(query.Eq(f1, 'foo'))),
+            [])
+
+    def test_Or_one_result(self):
+        self.assertEqual(self.displayQuery(
+            query.Or(query.All(f1))),
+            [1, 2, 3, 4, 5, 6])
