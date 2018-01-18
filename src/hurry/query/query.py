@@ -369,7 +369,7 @@ class And(Term):
 
     def __init__(self, *terms, **kwargs):
         self.terms = terms
-        self.weighted = kwargs.get('weigthed', False)
+        self.weighted = kwargs.get('weighted', False)
 
     def apply(self, cache, context=None):
         results = []
@@ -379,9 +379,6 @@ class And(Term):
                 # Empty results
                 return result
             results.append(result)
-
-        if len(results) == 0:
-            return IFSet()
 
         if len(results) == 1:
             return results[0]

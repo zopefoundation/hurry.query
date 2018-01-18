@@ -2,7 +2,6 @@ import unittest
 import zope.component.testing
 import zope.intid.interfaces
 
-from BTrees.IFBTree import IFSet
 from zope.catalog.catalog import Catalog
 from zope.catalog.field import FieldIndex
 from zope.catalog.interfaces import ICatalog
@@ -73,10 +72,7 @@ class DummyIntId(object):
         return iter(self.data)
 
 
-class NullTerm(query.Term):
-
-    def apply(self, cache, context=None):
-        return IFSet()
+f1 = ('catalog1', 'f1')
 
 
 class QueryTest(unittest.TestCase):
@@ -109,16 +105,38 @@ class QueryTest(unittest.TestCase):
         for entry in content:
             self.catalog.index_doc(self.intid.register(entry), entry)
 
-    def searchResults(self, q, context=None):
+    def searchResults(self, q, **kw):
         query = getUtility(IQuery)
-        return query.searchResults(q, context)
+        return query.searchResults(q, **kw)
 
-    def displayQuery(self, q, context=None):
-        r = self.searchResults(q, context)
+    def displayQuery(self, q, **kw):
+        r = self.searchResults(q, **kw)
         return [e.id for e in sorted(list(r))]
 
     def test_setup(self):
         """verify test fixtures by reproducing first doctest"""
-        f1 = ('catalog1', 'f1')
-        self.assertEqual(self.displayQuery(query.All(f1)),
-                         [1, 2, 3, 4, 5, 6])
+        self.assertEqual(self.displayQuery(
+            query.All(f1)),
+            [1, 2, 3, 4, 5, 6])
+
+    def test_And_one_result(self):
+        self.assertEqual(self.displayQuery(
+            query.And(query.All(f1))),
+            [1, 2, 3, 4, 5, 6])
+
+    def test_And_empty_intersection(self):
+        self.assertEqual(self.displayQuery(
+            query.And(query.Eq(f1, 'a'), query.Eq(f1, 'X'))),
+            [])
+
+    def test_And_weighted(self):
+        # this only executes the code path without any clue what the
+        # impact of 'weighted' should be, if any
+        self.assertEqual(self.displayQuery(
+            query.And(query.All(f1), query.All(f1), weighted=True)),
+            [1, 2, 3, 4, 5, 6])
+
+    def test_And_weighted_empty_intersection(self):
+        self.assertEqual(self.displayQuery(
+            query.And(query.Eq(f1, 'a'), query.Eq(f1, 'X'), weighted=True)),
+            [])
