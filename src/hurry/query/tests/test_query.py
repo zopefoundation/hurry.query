@@ -165,3 +165,8 @@ class QueryTest(unittest.TestCase):
         self.assertEqual(self.displayQuery(
             query.Difference(query.All(f1), query.All(f1))),
             [])
+
+    def test_In_one_result(self):
+        self.assertEqual(self.displayQuery(
+            query.In(f1, ['Y', 'Z'])),
+            [6])
