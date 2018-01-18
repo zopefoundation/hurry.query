@@ -38,8 +38,6 @@ from zope.index.text.parsetree import ParseError
 from zope.location.location import located, LocationProxy
 from hurry.query import interfaces
 
-import transaction
-import threading
 
 logger = logging.getLogger('hurry.query')
 HURRY_QUERY_TIMING = False
@@ -48,55 +46,6 @@ if 'HURRY_QUERY_TIMING' in os.environ:
         HURRY_QUERY_TIMING = float(os.environ['HURRY_QUERY_TIMING'])
     except (ValueError, TypeError):
         pass
-
-
-class Cache(threading.local):
-    implements(transaction.interfaces.IDataManager)
-
-    def __init__(self, manager):
-        self._manager = manager
-        self.reset()
-
-    def sortKey(self):
-        return 'A' * 26
-
-    def use(self, context):
-        if not self._joined:
-            self._joined = True
-            transaction = self._manager.get()
-            transaction.join(self)
-        if context is not self._context:
-            # The context changed, reset the cache as we might access
-            # different indexes.
-            self.cache = {}
-            self._context = context
-        return self.cache
-
-    def tpc_begin(self, transaction):
-        pass
-
-    def tpc_vote(self, transaction):
-        pass
-
-    def tpc_finish(self, transaction):
-        self.reset()
-
-    def tpc_abort(self, transaction):
-        self.reset()
-
-    def abort(self, transaction):
-        self.reset()
-
-    def commit(self, transaction):
-        pass
-
-    def reset(self):
-        self._joined = False
-        self._context = None
-        self.cache = {}
-
-
-transaction_cache = Cache(transaction.manager)
 
 
 class Locator(object):
@@ -249,7 +198,7 @@ class Query(object):
 
     def searchResults(
             self, query, context=None, sort_field=None, limit=None,
-            reverse=False, start=0, caching=False, timing=HURRY_QUERY_TIMING,
+            reverse=False, start=0, caching=None, timing=HURRY_QUERY_TIMING,
             wrapper=None, locate_to=None):
 
         if context is None:
@@ -257,9 +206,7 @@ class Query(object):
         else:
             context = IComponentLookup(context)
 
-        if caching is True:
-            cache = transaction_cache.use(context)
-        elif caching is False:
+        if caching in (True, False, None):
             cache = {}
         else:
             # A custom cache object was injected, use it.
