@@ -75,7 +75,7 @@ class DummyIntId(object):
 f1 = ('catalog1', 'f1')
 
 
-class QueryTest(unittest.TestCase):
+class QueryTestBase(unittest.TestCase):
 
     tearDown = zope.component.testing.tearDown
 
@@ -118,6 +118,38 @@ class QueryTest(unittest.TestCase):
         self.assertEqual(self.displayQuery(
             query.All(f1)),
             [1, 2, 3, 4, 5, 6])
+
+
+class TimingTest(QueryTestBase):
+
+    def test_init(self):
+        timer = query.Timing('foo', 1)
+        self.assertEqual(timer.key, 'foo')
+        self.assertGreater(timer.start, 0)
+        self.assertEqual(timer.start_order, 1)
+        self.assertEqual(timer.end, None)
+        self.assertEqual(timer.end_order, None)
+
+    def test_done(self):
+        timer = query.Timing()
+        timer.done(2)
+        self.assertGreater(timer.end, 0)
+        self.assertEqual(timer.end_order, 2)
+
+    def test_total(self):
+        import time
+
+        timer = query.Timing()
+        time.sleep(.1)
+        timer.done()
+        self.assertGreater(timer.total, 0)
+
+    def test_total_wo_end(self):
+        timer = query.Timing()
+        self.assertEqual(timer.total, None)
+
+
+class TermsTest(QueryTestBase):
 
     def test_Term_apply(self):
         term = query.Term()
