@@ -1,7 +1,9 @@
+import time
 import unittest
 import zope.component.testing
 import zope.intid.interfaces
 
+from testfixtures import LogCapture
 from zope.catalog.catalog import Catalog
 from zope.catalog.field import FieldIndex
 from zope.catalog.interfaces import ICatalog
@@ -137,8 +139,6 @@ class TimingTest(QueryTestBase):
         self.assertEqual(timer.end_order, 2)
 
     def test_total(self):
-        import time
-
         timer = query.Timing()
         time.sleep(.1)
         timer.done()
@@ -147,6 +147,156 @@ class TimingTest(QueryTestBase):
     def test_total_wo_end(self):
         timer = query.Timing()
         self.assertEqual(timer.total, None)
+
+
+class TimingAwareCacheTest(QueryTestBase):
+
+    def test_init(self):
+        cache = query.TimingAwareCache({})
+        self.assertEqual(cache.cache, {})
+        self.assertEqual(cache.timing, {})
+        self.assertEqual(cache.count, 0)
+        self.assertEqual(cache.post, None)
+
+    def test_start_post(self):
+        cache = query.TimingAwareCache({})
+        cache.start_post()
+        self.assertGreater(cache.post.start, 0)
+
+    def test_end_post(self):
+        cache = query.TimingAwareCache({})
+        with self.assertRaises(AttributeError):
+            cache.end_post()
+
+        cache.start_post()
+        time.sleep(0.1)
+        cache.end_post()
+        self.assertGreater(cache.post.total, 0)
+
+    def test_get_uncached(self):
+        cache = query.TimingAwareCache({})
+        self.assertFalse('foo' in cache.timing)
+        self.assertEqual(cache.count, 0)
+        value = cache.get('foo')
+        self.assertEqual(value, None)
+        self.assertTrue('foo' in cache.timing)
+        self.assertGreater(cache.timing['foo'].start, 0)
+        self.assertEqual(cache.timing['foo'].end, None)
+        self.assertEqual(cache.count, 1)
+
+    def test_get_cached(self):
+        cache = query.TimingAwareCache({'foo': 'bar'})
+        self.assertFalse('foo' in cache.timing)
+        self.assertEqual(cache.count, 0)
+        value = cache.get('foo')
+        self.assertEqual(value, 'bar')
+        self.assertFalse('foo' in cache.timing)
+        self.assertEqual(cache.count, 0)
+
+    def test_dunder_setitem(self):
+        cache = query.TimingAwareCache({})
+        self.assertFalse('foo' in cache.timing)
+        self.assertEqual(cache.count, 0)
+        cache['foo'] = 'bar'
+        self.assertFalse('foo' in cache.timing)
+        self.assertEqual(cache.count, 0)
+
+    def test_dunder_setitem_timing(self):
+        cache = query.TimingAwareCache({})
+        self.assertFalse('foo' in cache.timing)
+        self.assertEqual(cache.count, 0)
+        cache.get('foo')
+        self.assertEqual(cache.count, 1)
+        cache['foo'] = 'bar'
+        self.assertTrue('foo' in cache.timing)
+        self.assertGreater(cache.timing['foo'].start, 0)
+        self.assertGreater(cache.timing['foo'].end, 0)
+        self.assertEqual(cache.count, 2)
+
+    def test_report_empty(self):
+        with LogCapture() as logged:
+            cache = query.TimingAwareCache({})
+            cache.report()
+            records = logged.records
+
+        self.assertEqual(records, [])
+
+    def test_report_uncached(self):
+        with LogCapture() as logged:
+            cache = query.TimingAwareCache({})
+            cache.get('foo')
+            cache['foo'] = 'bar'
+            cache.report()
+            records = logged.records
+
+        self.assertEqual(records[0].levelname, 'INFO')
+        self.assertEqual(records[0].module, 'query')
+        self.assertIn('Catalog query', records[0].msg)
+        self.assertIn('s for terms', records[0].msg)
+        self.assertIn('s to finish', records[0].msg)
+        self.assertIn('s: foo', records[1].msg)
+
+    def test_report_uncached_post(self):
+        with LogCapture() as logged:
+            cache = query.TimingAwareCache({})
+            cache.start_post()
+            cache.get('foo')
+            cache['foo'] = 'bar'
+            cache.end_post()
+            cache.report()
+            records = logged.records
+
+        self.assertEqual(records[0].levelname, 'INFO')
+        self.assertEqual(records[0].module, 'query')
+        self.assertIn('Catalog query', records[0].msg)
+        self.assertIn('s for terms', records[0].msg)
+        self.assertIn('s to finish', records[0].msg)
+        self.assertIn('s: foo', records[1].msg)
+
+    def test_report_uncached_post_under_over(self):
+        with LogCapture() as logged:
+            cache = query.TimingAwareCache({})
+            cache.start_post()
+            cache.get('foo')
+            cache['foo'] = 'bar'
+            cache.end_post()
+            cache.report(over=1)
+            records = logged.records
+
+        self.assertEqual(records, [])
+
+    def test_report_uncached_mixedup_order(self):
+        with LogCapture() as logged:
+            cache = query.TimingAwareCache({})
+            cache.get('foobar')
+            cache['foobar'] = 'foobar'
+            cache.get('foo')
+            cache.get('bar')
+            cache['bar'] = 'bar'
+            cache['foo'] = 'foo'
+            cache.get('baz')
+            cache['baz'] = 'baz'
+            cache.report()
+            records = logged.records
+
+        # verify dedent from 5 spaces to 1 space
+        self.assertEqual(len(records[1].msg) - len(records[1].msg.lstrip(' ')),
+                         5)
+        self.assertEqual(len(records[3].msg) - len(records[3].msg.lstrip(' ')),
+                         1)
+
+    def test_report_uncached_no_end_post(self):
+        with LogCapture() as logged:
+            cache = query.TimingAwareCache({})
+            cache.start_post()
+            cache.get('foo')
+            cache.end_post()
+            cache.get('foobar')
+            cache['foo'] = 'bar'
+            cache.report()
+            records = logged.records
+
+        self.assertTrue(records[2].msg.endswith('  ?: foobar.'))
 
 
 class TermsTest(QueryTestBase):

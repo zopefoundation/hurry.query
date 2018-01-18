@@ -221,7 +221,7 @@ class TimingAwareCache(object):
     def report(self, over=0):
         all_timing = sorted(self.timing.values(), key=lambda t: t.start_order)
         if not len(all_timing):
-            return
+            return  # pragma: no cover (peephole optimizer interferes)
         total_post = 0 if self.post is None else self.post.total
         total_terms = all_timing[0].total
         if (total_terms + total_post) < over:
@@ -229,15 +229,16 @@ class TimingAwareCache(object):
         indent = 0
         order = [all_timing[0].end_order]
         logger.info(
-            'Catalog query toke {:.4f}s for terms, {:.4f}s to finish.'.format(
+            'Catalog query took {:.4f}s for terms, {:.4f}s to finish.'.format(
                 total_terms, total_post))
         for timing in all_timing:
-            if timing.start_order < order[-1]:
+            if order == [] or timing.start_order < order[-1]:
                 indent += 4
                 order.append(timing.end_order)
+            total = timing.total and '{:.4f}s'.format(timing.total) or '?'
             logger.info(
-                '{} {:.4f}s: {}.'.format(
-                    ' ' * indent, timing.total, str(timing.key)))
+                '{} {}: {}.'.format(
+                    ' ' * indent, total, str(timing.key)))
             if timing.end_order > order[-1]:
                 indent -= 4
                 order.pop()

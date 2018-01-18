@@ -32,6 +32,7 @@ def read(*rnames):
     return text
 
 tests_require = [
+    'testfixtures',
     'zope.container',
     ]
 
