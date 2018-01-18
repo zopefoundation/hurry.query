@@ -150,3 +150,18 @@ class QueryTest(unittest.TestCase):
         self.assertEqual(self.displayQuery(
             query.Or(query.All(f1))),
             [1, 2, 3, 4, 5, 6])
+
+    def test_Difference_one_empty_result(self):
+        self.assertEqual(self.displayQuery(
+            query.Difference(query.Eq(f1, 'foo'))),
+            [])
+
+    def test_Difference_second_empty_result(self):
+        self.assertEqual(self.displayQuery(
+            query.Difference(query.All(f1), query.Eq(f1, 'foo'))),
+            [1, 2, 3, 4, 5, 6])
+
+    def test_Difference_empty_difference(self):
+        self.assertEqual(self.displayQuery(
+            query.Difference(query.All(f1), query.All(f1))),
+            [])

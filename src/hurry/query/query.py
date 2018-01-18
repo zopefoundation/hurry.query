@@ -435,6 +435,7 @@ class Difference(Term):
 
     def apply(self, cache, context=None):
         results = []
+
         for index, term in enumerate(self.terms):
             result = term.cached_apply(cache, context)
             # If we do not have any results for the first index, just
@@ -442,7 +443,7 @@ class Difference(Term):
             if not result:
                 if not index:
                     return IFSet()
-                continue
+                continue  # pragma: no cover (peephole optimizer interferes)
             results.append(result)
 
         result = results.pop(0)
