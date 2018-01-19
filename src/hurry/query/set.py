@@ -67,11 +67,11 @@ class SetBetween(SetTerm):
 
     def __init__(self, index_id,
                  minimum=None, maximum=None,
-                 include_minimum=False, include_maximum=False):
+                 exclude_min=False, exclude_max=False):
         super(SetBetween, self).__init__(index_id)
-        self.options = (minimum, maximum, include_minimum, include_maximum)
+        self.options = (minimum, maximum, exclude_min, exclude_max)
 
-    def apply(self, context=None):
+    def apply(self, cache, context=None):
         return self.getIndex(context).apply({'between': self.options})
 
     def key(self, context=None):
@@ -93,7 +93,7 @@ class ExtentNone(SetTerm):
     """Any ids in the extent that are not indexed by this index."""
 
     def __init__(self, index_id, extent):
-        super(None, self).__init__(index_id)
+        super(ExtentNone, self).__init__(index_id)
         self.extent = extent
 
     def apply(self, cache, context=None):

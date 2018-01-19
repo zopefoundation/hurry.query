@@ -1,10 +1,35 @@
 CHANGES
 =======
 
-2.7 (unreleased)
+3.0 (unreleased)
 ----------------
 
-- Nothing changed yet.
+- Support for python 3.4, 3.5 and 3.6 in addition to python 2.7
+
+- Cleanup in preparation for python3 support:
+
+  Bugfixes:
+  o API change: fix And(weighted=) keyword argument typo
+  o API change: remove utterly broken ``include_minimum`` and ``include_maximum``
+    arguments to SetBetween(), provide ``exclude_min`` and ``exclude_max`` instead.
+  o API change: fix broken SetBetween.apply(): introduce ``cache`` arg
+  o Fix ExtentNone() super delegation bug
+  o Fix TimingAwareCaching.report() edge condition bug
+
+  Major:
+  o Remove unsupported transaction_cache
+  
+  Minor:
+  o Clarify HURRY_QUERY_TIMING environment and searchResults(timing=) type
+  o Fix TimingAwareCaching.report() output typo
+  o Clarify Query.searchResults(caching=) argument type
+  o Remove unreachable code path from And()
+
+  Dev:
+  o Maximize test coverage
+  o Add Travis and Tox testing configurations
+  o Bypass bootstrap.py
+  o Various python3 compatibility preparations
 
 
 2.6 (2018-01-10)

@@ -16,21 +16,29 @@
 $Id$
 """
 import os
+import sys
 from setuptools import setup, find_packages
+
+if sys.version_info.major > 2:
+    import html
 
 
 def read(*rnames):
     text = open(os.path.join(os.path.dirname(__file__), *rnames)).read()
-    text = unicode(text, 'utf-8').encode('ascii', 'xmlcharrefreplace')
+    if sys.version_info.major == 2:
+        text = unicode(text, 'utf-8').encode('ascii', 'xmlcharrefreplace')
+    else:
+        text = html.escape(text)
     return text
 
 tests_require = [
+    'testfixtures',
     'zope.container',
     ]
 
 setup(
     name="hurry.query",
-    version='2.7.dev0',
+    version='3.0.dev0',
     author='Infrae',
     author_email='faassen@startifact.com',
     description="Higher level query system for the zope.catalog",
@@ -41,13 +49,22 @@ setup(
     keywords="zope zope3 catalog index query",
     classifiers=[
         'Development Status :: 5 - Production/Stable',
+        'Natural Language :: English',
+        'Operating System :: OS Independent',
+        'Topic :: Internet :: WWW/HTTP',
         'Environment :: Web Environment',
         'Intended Audience :: Developers',
         'License :: OSI Approved :: Zope Public License',
         'Programming Language :: Python',
-        'Natural Language :: English',
-        'Operating System :: OS Independent',
-        'Topic :: Internet :: WWW/HTTP',
+        'Programming Language :: Python :: 2',
+        'Programming Language :: Python :: 2.7',
+        'Programming Language :: Python :: 3',
+        'Programming Language :: Python :: 3.4',
+        'Programming Language :: Python :: 3.5',
+        'Programming Language :: Python :: 3.6',
+        'Programming Language :: Python :: Implementation',
+        'Programming Language :: Python :: Implementation :: CPython',
+        'Programming Language :: Python :: Implementation :: PyPy',
         'Framework :: Zope3'],
     url='http://pypi.python.org/pypi/hurry.query',
     packages=find_packages('src'),

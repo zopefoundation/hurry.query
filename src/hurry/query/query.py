@@ -31,72 +31,21 @@ from zope.catalog.field import IFieldIndex
 from zope.catalog.interfaces import ICatalog
 from zope.catalog.text import ITextIndex
 from zope.component import getUtility, getSiteManager, IComponentLookup
-from zope.interface import implements
+from zope.interface import implementer
 from zope.intid.interfaces import IIntIds
 from zope.index.interfaces import IIndexSort
 from zope.index.text.parsetree import ParseError
 from zope.location.location import located, LocationProxy
 from hurry.query import interfaces
 
-import transaction
-import threading
 
 logger = logging.getLogger('hurry.query')
-HURRY_QUERY_TIMING = False
+HURRY_QUERY_TIMING = 0.0  # log queries taking longer than this, in seconds
 if 'HURRY_QUERY_TIMING' in os.environ:
     try:
         HURRY_QUERY_TIMING = float(os.environ['HURRY_QUERY_TIMING'])
     except (ValueError, TypeError):
         pass
-
-
-class Cache(threading.local):
-    implements(transaction.interfaces.IDataManager)
-
-    def __init__(self, manager):
-        self._manager = manager
-        self.reset()
-
-    def sortKey(self):
-        return 'A' * 26
-
-    def use(self, context):
-        if not self._joined:
-            self._joined = True
-            transaction = self._manager.get()
-            transaction.join(self)
-        if context is not self._context:
-            # The context changed, reset the cache as we might access
-            # different indexes.
-            self.cache = {}
-            self._context = context
-        return self.cache
-
-    def tpc_begin(self, transaction):
-        pass
-
-    def tpc_vote(self, transaction):
-        pass
-
-    def tpc_finish(self, transaction):
-        self.reset()
-
-    def tpc_abort(self, transaction):
-        self.reset()
-
-    def abort(self, transaction):
-        self.reset()
-
-    def commit(self, transaction):
-        pass
-
-    def reset(self):
-        self._joined = False
-        self._context = None
-        self.cache = {}
-
-
-transaction_cache = Cache(transaction.manager)
 
 
 class Locator(object):
@@ -111,8 +60,8 @@ class Locator(object):
             LocationProxy(contained), self.container, contained.__name__)
 
 
+@implementer(interfaces.IResults)
 class Results(object):
-    implements(interfaces.IResults)
 
     def __init__(self, context, all_results, selected_results,
                  wrapper=None, locate_to=None):
@@ -151,8 +100,8 @@ class Results(object):
             yield self.get(uid)
 
 
+@implementer(interfaces.IResults)
 class NoResults(object):
-    implements(interfaces.IResults)
 
     count = 0
     total = 0
@@ -221,7 +170,7 @@ class TimingAwareCache(object):
     def report(self, over=0):
         all_timing = sorted(self.timing.values(), key=lambda t: t.start_order)
         if not len(all_timing):
-            return
+            return  # pragma: no cover (peephole optimizer interferes)
         total_post = 0 if self.post is None else self.post.total
         total_terms = all_timing[0].total
         if (total_terms + total_post) < over:
@@ -229,26 +178,28 @@ class TimingAwareCache(object):
         indent = 0
         order = [all_timing[0].end_order]
         logger.info(
-            'Catalog query toke {:.4f}s for terms, {:.4f}s to finish.'.format(
+            'Catalog query took {:.4f}s for terms, {:.4f}s to finish.'.format(
                 total_terms, total_post))
         for timing in all_timing:
-            if timing.start_order < order[-1]:
+            if order == [] or timing.start_order < order[-1]:
                 indent += 4
                 order.append(timing.end_order)
+            total = timing.total and '{:.4f}s'.format(timing.total) or '?'
             logger.info(
-                '{} {:.4f}s: {}.'.format(
-                    ' ' * indent, timing.total, str(timing.key)))
-            if timing.end_order > order[-1]:
+                '{} {}: {}.'.format(
+                    ' ' * indent, total, str(timing.key)))
+            if timing.end_order and len(order) \
+               and timing.end_order > order[-1]:
                 indent -= 4
                 order.pop()
 
 
+@implementer(interfaces.IQuery)
 class Query(object):
-    implements(interfaces.IQuery)
 
     def searchResults(
             self, query, context=None, sort_field=None, limit=None,
-            reverse=False, start=0, caching=False, timing=HURRY_QUERY_TIMING,
+            reverse=False, start=0, caching=None, timing=HURRY_QUERY_TIMING,
             wrapper=None, locate_to=None):
 
         if context is None:
@@ -256,16 +207,14 @@ class Query(object):
         else:
             context = IComponentLookup(context)
 
-        if caching is True:
-            cache = transaction_cache.use(context)
-        elif caching is False:
+        if caching in (True, False, None):
             cache = {}
         else:
             # A custom cache object was injected, use it.
             cache = caching
 
         timer = None
-        if timing is not False:
+        if timing:
             timer = cache = TimingAwareCache(cache)
         all_results = query.cached_apply(cache, context)
         if not all_results:
@@ -328,8 +277,8 @@ class Query(object):
             context, all_results, selected_results, wrapper, locate_to)
 
 
+@implementer(interfaces.ITerm)
 class Term(object):
-    implements(interfaces.ITerm)
 
     def key(self, context=None):
         raise NotImplementedError()
@@ -369,7 +318,7 @@ class And(Term):
 
     def __init__(self, *terms, **kwargs):
         self.terms = terms
-        self.weighted = kwargs.get('weigthed', False)
+        self.weighted = kwargs.get('weighted', False)
 
     def apply(self, cache, context=None):
         results = []
@@ -379,9 +328,6 @@ class And(Term):
                 # Empty results
                 return result
             results.append(result)
-
-        if len(results) == 0:
-            return IFSet()
 
         if len(results) == 1:
             return results[0]
@@ -438,6 +384,7 @@ class Difference(Term):
 
     def apply(self, cache, context=None):
         results = []
+
         for index, term in enumerate(self.terms):
             result = term.cached_apply(cache, context)
             # If we do not have any results for the first index, just
@@ -445,7 +392,7 @@ class Difference(Term):
             if not result:
                 if not index:
                     return IFSet()
-                continue
+                continue  # pragma: no cover (peephole optimizer interferes)
             results.append(result)
 
         result = results.pop(0)
@@ -500,9 +447,9 @@ class Objects(Term):
 
 class IndexTerm(Term):
 
-    def __init__(self, (catalog_name, index_name)):
-        self.catalog_name = catalog_name
-        self.index_name = index_name
+    def __init__(self, catalog_name__and__index_name):
+        self.catalog_name = catalog_name__and__index_name[0]
+        self.index_name = catalog_name__and__index_name[1]
 
     def getIndex(self, context):
         catalog = getUtility(ICatalog, self.catalog_name, context)

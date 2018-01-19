@@ -13,7 +13,7 @@ Setup
 
 Let's define a simple content object. First its interface::
 
-  >>> from zope.interface import Interface, Attribute, implements
+  >>> from zope.interface import Interface, Attribute, implementer
   >>> class IContent(Interface):
   ...     f1 = Attribute('f1')
   ...     f2 = Attribute('f2')
@@ -24,9 +24,11 @@ Let's define a simple content object. First its interface::
 
 And its implementation::
 
+  >>> import functools
   >>> from zope.container.contained import Contained
-  >>> class Content(Contained):
-  ...     implements(IContent)
+  >>> @functools.total_ordering
+  ... @implementer(IContent)
+  ... class Content(Contained):
   ...     def __init__(self, id, f1='', f2='', f3='', f4='', t1='', t2=''):
   ...         self.id = id
   ...         self.f1 = f1
@@ -35,8 +37,10 @@ And its implementation::
   ...         self.f4 = f4
   ...         self.t1 = t1
   ...         self.t2 = t2
-  ...     def __cmp__(self, other):
-  ...         return cmp(self.id, other.id)
+  ...     def __lt__(self, other):
+  ...         return self.id < other.id
+  ...     def __eq__(self, other):
+  ...         return self.id == other.id
   ...     def __repr__(self):
   ...         return '<Content "{}">'.format(self.id)
 
@@ -49,8 +53,8 @@ the full-blown zope environment::
 
   >>> from zope import interface
   >>> import zope.intid.interfaces
-  >>> class DummyIntId(object):
-  ...     interface.implements(zope.intid.interfaces.IIntIds)
+  >>> @interface.implementer(zope.intid.interfaces.IIntIds)
+  ... class DummyIntId(object):
   ...     MARKER = '__dummy_int_id__'
   ...     def __init__(self):
   ...         self.counter = 0
@@ -224,8 +228,11 @@ A combination of 'In' and '&'::
 SetIndex queries
 ----------------
 
-The SetIndex is defined in zc.catalog. Let's make a catalog which uses
-it::
+The SetIndex is defined in zc.catalog.
+
+  >>> from hurry.query import set
+
+Let's make a catalog which uses it::
 
   >>> intid = DummyIntId()
   >>> provideUtility(intid, zope.intid.interfaces.IIntIds)
@@ -256,36 +263,91 @@ And catalog them now::
 
 We can query for all indexes objects:
 
-  >>> from hurry.query.set import All
-  >>> displayQuery(All(f1))
+  >>> displayQuery(set.All(f1))
   [1, 2, 3, 4, 5, 6, 7]
 
 Now do a a 'any of' query, which returns all documents that
 contain any of the values listed::
 
-  >>> from hurry.query.set import AnyOf
-  >>> displayQuery(AnyOf(f1, ['a', 'c']))
+  >>> displayQuery(set.AnyOf(f1, ['a', 'c']))
   [1, 2, 4, 5, 6]
-  >>> displayQuery(AnyOf(f1, ['c', 'b']))
+  >>> displayQuery(set.AnyOf(f1, ['c', 'b']))
   [1, 3, 4, 5, 6]
-  >>> displayQuery(AnyOf(f1, ['a']))
+  >>> displayQuery(set.AnyOf(f1, ['a']))
   [1, 2, 6]
 
 Do a 'all of' query, which returns all documents that
 contain all of the values listed::
 
-  >>> from hurry.query.set import AllOf
-  >>> displayQuery(AllOf(f1, ['a']))
+  >>> displayQuery(set.AllOf(f1, ['a']))
   [1, 2, 6]
-  >>> displayQuery(AllOf(f1, ['a', 'b']))
+  >>> displayQuery(set.AllOf(f1, ['a', 'b']))
   [1]
-  >>> displayQuery(AllOf(f1, ['a', 'c']))
+  >>> displayQuery(set.AllOf(f1, ['a', 'c']))
   [1, 6]
 
-We can combine this with other queries::
+The next interesting set of queries allows you to make evaluations of the
+values. For example, you can ask for all objects between a certain set of
+values:
 
-  >>> displayQuery(AnyOf(f1, ['a']) & Eq(f2, 1))
+  >>> displayQuery(set.SetBetween(f1, 'a', 'c'))
+  [1, 2, 3, 4, 5, 6]
+
+  >>> displayQuery(set.SetBetween(f1, 'a', 'c', exclude_min=True))
+  [1, 3, 4, 5, 6]
+
+  >>> displayQuery(set.SetBetween(f1, 'b', 'c', exclude_max=True))
+  [1, 3, 5]
+
+  >>> displayQuery(set.SetBetween(f1, 'a', 'c',
+  ...                             exclude_min=True, exclude_max=True))
+  [1, 3, 5]
+
+You can also leave out one end of the range:
+
+  >>> displayQuery(set.SetBetween(f1, 'c', None))
+  [1, 4, 5, 6, 7]
+  >>> displayQuery(set.SetBetween(f1, None, 'c', exclude_max=True))
+  [1, 2, 3, 5, 6]
+
+You can chain set queries:
+
+  >>> displayQuery(set.AnyOf(f1, ['a']) & Eq(f2, 1))
   [1, 2]
+
+The ``set` module also supports ``zc.catalog`` extents. The first query is
+``ExtentAny``, which returns all douments matching the extent. If the the
+extent is ``None``, all document ids are returned:
+
+  >>> displayQuery(set.ExtentAny(f1, None))
+  [1, 2, 3, 4, 5, 6, 7]
+
+If we now create an extent that is only in the scope of the first four
+documents,
+
+  >>> from zc.catalog.extentcatalog import FilterExtent
+  >>> extent = FilterExtent(lambda extent, uid, obj: True)
+  >>> for i in range(4):
+  ...     extent.add(i, i)
+
+then only the first four are returned:
+
+  >>> displayQuery(set.ExtentAny(f1, extent))
+  [1, 2, 3, 4]
+
+The opposite query is the ``ExtentNone`` query, which returns all ids in the
+extent that are *not* in the index:
+
+  >>> id = intid.register(Content(9, 'b'))
+  >>> id = intid.register(Content(10, 'c'))
+  >>> id = intid.register(Content(11, 'a'))
+
+  >>> extent = FilterExtent(lambda extent, uid, obj: True)
+  >>> for i in range(11):
+  ...     extent.add(i, i)
+
+  >>> displayQuery(set.ExtentNone(f1, extent))
+  [8, 9, 10, 11]
 
 
 ValueIndex queries
@@ -386,7 +448,10 @@ You can also use greater-equals and lesser-equals for the same purpose:
   >>> displayQuery(value.Le(f1, 'c'))
   [1, 2, 3, 5, 6]
 
-Of course, you can chain those queries with the others as demonstrated before.
+You can chain value queries:
+
+  >>> displayQuery(value.Ge(f1, 'c') & value.Le(f1, 'c'))
+  [3, 5]
 
 The ``value`` module also supports ``zc.catalog`` extents. The first query is
 ``ExtentAny``, which returns all douments matching the extent. If the the
@@ -436,8 +501,8 @@ First setup a second registry and second catalog and populate it.
   >>> import zope.component.interfaces
   >>> import zope.interface
   >>> intid1 = DummyIntId()
-  >>> class MockSite(object):
-  ...     zope.interface.implements(zope.component.interfaces.IComponentLookup)
+  >>> @zope.interface.implementer(zope.component.interfaces.IComponentLookup)
+  ... class MockSite(object):
   ...     def __init__(self):
   ...         self.registry = Components('components')
   ...     def queryUtility(self, interface, name='', default=None):
@@ -570,6 +635,75 @@ the tested index is deterministic enough to be used as a proper test).
   >>> displayResult(Eq(f1, 'a'), limit=2, reverse=True)
   [<Content "6">, <Content "2">]
 
+Result counters
+---------------
+
+Result objects provide metadata about the result.
+
+Define a convenience function for obtaining a result.
+
+  >>> def getResult(q, context=None, **kw):
+  ...     query = getUtility(IQuery)
+  ...     return query.searchResults(q, context, **kw)
+
+Performing a query with a sort_field gives a well-defined result:
+
+  >>> f1 = ('catalog1', 'f1')
+  >>> result = getResult(Eq(f1, 'a'), sort_field=catalog['f1'])
+  >>> [e for e in result]
+  [<Content "1">, <Content "2">, <Content "6">]
+
+We can access 'total' and 'count' properties, and 'first()' on the result:
+
+  >>> result.total
+  3
+  >>> result.count
+  3
+  >>> result.first()
+  <Content "1">
+
+Changing 'start' is reflected in the returned data:
+
+>>> result = getResult(Eq(f1, 'a'), sort_field=catalog['f1'], start=1)
+  >>> [e for e in result]
+  [<Content "2">, <Content "6">]
+
+It also changes 'count' and 'first()':
+
+  >>> result.count
+  2
+  >>> result.first()
+  <Content "2">
+
+But 'total' still reflects all matches, including the hidden first one:
+
+  >>> result.total
+  3
+
+Adding a limit:
+
+  >>> result = getResult(Eq(f1, 'a'), sort_field=catalog['f1'], start=1,
+  ...                    limit=1)
+  >>> [e for e in result]
+  [<Content "2">]
+  >>> result.total
+  3
+  >>> result.count
+  1
+  >>> result.first()
+  <Content "2">
+
+The same accessors are available on an empty result:
+
+  >>> result = getResult(Eq(f1, 'foo'), sort_field=catalog['f1'])
+  >>> [e for e in result]
+  []
+  >>> result.total
+  0
+  >>> result.count
+  0
+  >>> result.first() is None
+  True
 
 Wrapper
 -------
