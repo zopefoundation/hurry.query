@@ -13,7 +13,7 @@ Setup
 
 Let's define a simple content object. First its interface::
 
-  >>> from zope.interface import Interface, Attribute, implements
+  >>> from zope.interface import Interface, Attribute, implementer
   >>> class IContent(Interface):
   ...     f1 = Attribute('f1')
   ...     f2 = Attribute('f2')
@@ -24,9 +24,11 @@ Let's define a simple content object. First its interface::
 
 And its implementation::
 
+  >>> import functools
   >>> from zope.container.contained import Contained
-  >>> class Content(Contained):
-  ...     implements(IContent)
+  >>> @functools.total_ordering
+  ... @implementer(IContent)
+  ... class Content(Contained):
   ...     def __init__(self, id, f1='', f2='', f3='', f4='', t1='', t2=''):
   ...         self.id = id
   ...         self.f1 = f1
@@ -35,8 +37,10 @@ And its implementation::
   ...         self.f4 = f4
   ...         self.t1 = t1
   ...         self.t2 = t2
-  ...     def __cmp__(self, other):
-  ...         return cmp(self.id, other.id)
+  ...     def __lt__(self, other):
+  ...         return self.id < other.id
+  ...     def __eq__(self, other):
+  ...         return self.id == other.id
   ...     def __repr__(self):
   ...         return '<Content "{}">'.format(self.id)
 
@@ -49,8 +53,8 @@ the full-blown zope environment::
 
   >>> from zope import interface
   >>> import zope.intid.interfaces
-  >>> class DummyIntId(object):
-  ...     interface.implements(zope.intid.interfaces.IIntIds)
+  >>> @interface.implementer(zope.intid.interfaces.IIntIds)
+  ... class DummyIntId(object):
   ...     MARKER = '__dummy_int_id__'
   ...     def __init__(self):
   ...         self.counter = 0
@@ -497,8 +501,8 @@ First setup a second registry and second catalog and populate it.
   >>> import zope.component.interfaces
   >>> import zope.interface
   >>> intid1 = DummyIntId()
-  >>> class MockSite(object):
-  ...     zope.interface.implements(zope.component.interfaces.IComponentLookup)
+  >>> @zope.interface.implementer(zope.component.interfaces.IComponentLookup)
+  ... class MockSite(object):
   ...     def __init__(self):
   ...         self.registry = Components('components')
   ...     def queryUtility(self, interface, name='', default=None):

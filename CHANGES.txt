@@ -1,8 +1,10 @@
 CHANGES
 =======
 
-2.7 (unreleased)
+3.0 (unreleased)
 ----------------
+
+- Support for python 3.4, 3.5 and 3.6 in addition to python 2.7
 
 - Cleanup in preparation for python3 support:
 

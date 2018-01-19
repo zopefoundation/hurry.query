@@ -31,7 +31,7 @@ from zope.catalog.field import IFieldIndex
 from zope.catalog.interfaces import ICatalog
 from zope.catalog.text import ITextIndex
 from zope.component import getUtility, getSiteManager, IComponentLookup
-from zope.interface import implements
+from zope.interface import implementer
 from zope.intid.interfaces import IIntIds
 from zope.index.interfaces import IIndexSort
 from zope.index.text.parsetree import ParseError
@@ -60,8 +60,8 @@ class Locator(object):
             LocationProxy(contained), self.container, contained.__name__)
 
 
+@implementer(interfaces.IResults)
 class Results(object):
-    implements(interfaces.IResults)
 
     def __init__(self, context, all_results, selected_results,
                  wrapper=None, locate_to=None):
@@ -100,8 +100,8 @@ class Results(object):
             yield self.get(uid)
 
 
+@implementer(interfaces.IResults)
 class NoResults(object):
-    implements(interfaces.IResults)
 
     count = 0
     total = 0
@@ -188,13 +188,14 @@ class TimingAwareCache(object):
             logger.info(
                 '{} {}: {}.'.format(
                     ' ' * indent, total, str(timing.key)))
-            if timing.end_order > order[-1]:
+            if timing.end_order and len(order) \
+               and timing.end_order > order[-1]:
                 indent -= 4
                 order.pop()
 
 
+@implementer(interfaces.IQuery)
 class Query(object):
-    implements(interfaces.IQuery)
 
     def searchResults(
             self, query, context=None, sort_field=None, limit=None,
@@ -276,8 +277,8 @@ class Query(object):
             context, all_results, selected_results, wrapper, locate_to)
 
 
+@implementer(interfaces.ITerm)
 class Term(object):
-    implements(interfaces.ITerm)
 
     def key(self, context=None):
         raise NotImplementedError()

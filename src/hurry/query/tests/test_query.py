@@ -1,3 +1,4 @@
+import functools
 import time
 import unittest
 import zope.component.testing
@@ -10,7 +11,7 @@ from zope.catalog.interfaces import ICatalog
 from zope.catalog.text import TextIndex
 from zope.component import provideUtility, getUtility
 from zope.container.contained import Contained
-from zope.interface import Interface, Attribute, implements
+from zope.interface import Interface, Attribute, implementer
 
 from hurry.query import query
 from hurry.query.interfaces import IQuery
@@ -28,8 +29,9 @@ class IContent(Interface):
     t2 = Attribute('t2')
 
 
+@functools.total_ordering
+@implementer(IContent)
 class Content(Contained):
-    implements(IContent)
 
     def __init__(self, id, f1='', f2='', f3='', f4='', t1='', t2=''):
         self.id = id
@@ -40,15 +42,18 @@ class Content(Contained):
         self.t1 = t1
         self.t2 = t2
 
-    def __cmp__(self, other):
-        return cmp(self.id, other.id)
+    def __lt__(self, other):
+        return self.id < other.id
+
+    def __eq__(self, other):
+        return self.id == other.id
 
     def __repr__(self):
         return '<Content "{}">'.format(self.id)
 
 
+@implementer(zope.intid.interfaces.IIntIds)
 class DummyIntId(object):
-    implements(zope.intid.interfaces.IIntIds)
     MARKER = '__dummy_int_id__'
 
     def __init__(self):
