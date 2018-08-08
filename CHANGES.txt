@@ -4,7 +4,7 @@ CHANGES
 3.0.1 (unreleased)
 ------------------
 
-- Nothing changed yet.
+- Add ``Ids`` term that queries for intids.
 
 
 3.0.0 (2018-01-19)
@@ -24,7 +24,7 @@ CHANGES
 
   Major:
   o Remove unsupported transaction_cache
-  
+
   Minor:
   o Clarify HURRY_QUERY_TIMING environment and searchResults(timing=) type
   o Fix TimingAwareCaching.report() output typo

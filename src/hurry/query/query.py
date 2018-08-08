@@ -445,6 +445,18 @@ class Objects(Term):
         return ('objects', self.ids(context))
 
 
+class Ids(Term):
+
+    def __init__(self, *ids):
+        self.ids = ids
+
+    def apply(self, cache, context=None):
+        return IFSet(self.ids)
+
+    def key(self, context=None):
+        return ('ids', self.ids)
+
+
 class IndexTerm(Term):
 
     def __init__(self, catalog_name__and__index_name):

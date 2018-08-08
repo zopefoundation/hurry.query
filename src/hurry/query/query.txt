@@ -777,3 +777,17 @@ queries::
   >>> from hurry.query import Objects
   >>> displayResult(Objects(content))
   [<Content "1">, <Content "2">, <Content "3">, <Content "4">, <Content "5">, <Content "6">]
+
+There is a special term that allows querying objects by intid::
+
+  >>> from hurry.query import Ids
+  >>> displayResult(Ids())
+  []
+
+  >>> all_intids = [intid.getId(x) for x in content]
+  >>> displayResult(Ids(*all_intids))
+  [<Content "1">, <Content "2">, <Content "3">, <Content "4">, <Content "5">, <Content "6">]
+
+  >>> odd_intids = [intid.getId(x) for x in content if x.id % 2]
+  >>> displayResult(Ids(*odd_intids))
+  [<Content "1">, <Content "3">, <Content "5">]
