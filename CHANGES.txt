@@ -4,8 +4,7 @@ CHANGES
 3.0.1 (unreleased)
 ------------------
 
-- Add ``Ids`` term that queries for intids.
-
+- Add ``Ids`` term that include already known intids in a query.
 
 3.0.0 (2018-01-19)
 ------------------
