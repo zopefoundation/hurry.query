@@ -497,11 +497,11 @@ determines which index will be searched.
 First setup a second registry and second catalog and populate it.
 
   >>> catalog2 = Catalog()
-  >>> from zope.component.registry import Components
-  >>> import zope.component.interfaces
+  >>> from zope.interface.registry import Components
   >>> import zope.interface
+  >>> import zope.interface.interfaces
   >>> intid1 = DummyIntId()
-  >>> @zope.interface.implementer(zope.component.interfaces.IComponentLookup)
+  >>> @zope.interface.implementer(zope.interface.interfaces.IComponentLookup)
   ... class MockSite(object):
   ...     def __init__(self):
   ...         self.registry = Components('components')

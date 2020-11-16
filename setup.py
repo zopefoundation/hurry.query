@@ -77,6 +77,7 @@ setup(
     zip_safe=False,
     install_requires=[
         'BTrees',
+        'six',
         'setuptools',
         'transaction',
         'zc.catalog',
