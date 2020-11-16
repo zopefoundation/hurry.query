@@ -123,13 +123,13 @@ class Timing(object):
 
     def __init__(self, key=None, order=0):
         self.key = key
-        self.start = time.clock()
+        self.start = time.perf_counter()
         self.start_order = order
         self.end = None
         self.end_order = None
 
     def done(self, order=0):
-        self.end = time.clock()
+        self.end = time.perf_counter()
         self.end_order = order
 
     @property
