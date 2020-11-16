@@ -6,12 +6,15 @@ indexes, as well as the indexes in zc.catalog. It is in part inspired
 by AdvancedQuery for Zope 2 by Dieter Maurer, though has an independent
 origin.
 
+You can have a look at the doc tests in the package for more
+information regarding the usage.
+
 .. contents::
 
 Setup
 -----
 
-Let's define a simple content object. First its interface::
+Let's define a simple content object. First its interface:
 
   >>> from zope.interface import Interface, Attribute, implementer
   >>> class IContent(Interface):
@@ -22,7 +25,7 @@ Let's define a simple content object. First its interface::
   ...     t1 = Attribute('t1')
   ...     t2 = Attribute('t2')
 
-And its implementation::
+And its implementation:
 
   >>> import functools
   >>> from zope.container.contained import Contained
@@ -49,7 +52,7 @@ easily. By including the __cmp__ method we make sure search results
 can be stably sorted.
 
 We use a fake int id utility here so we can test independent of
-the full-blown zope environment::
+the full-blown zope environment:
 
   >>> from zope import interface
   >>> import zope.intid.interfaces
@@ -77,14 +80,14 @@ the full-blown zope environment::
   >>> from zope.component import provideUtility
   >>> provideUtility(intid, zope.intid.interfaces.IIntIds)
 
-Now let's register a catalog::
+Now let's register a catalog:
 
   >>> from zope.catalog.interfaces import ICatalog
   >>> from zope.catalog.catalog import Catalog
   >>> catalog = Catalog()
   >>> provideUtility(catalog, ICatalog, 'catalog1')
 
-And set it up with various indexes::
+And set it up with various indexes:
 
   >>> from zope.catalog.field import FieldIndex
   >>> from zope.catalog.text import TextIndex
@@ -95,7 +98,7 @@ And set it up with various indexes::
   >>> catalog['t1'] = TextIndex('t1', IContent)
   >>> catalog['t2'] = TextIndex('t2', IContent)
 
-Now let's create some objects so that they'll be cataloged::
+Now let's create some objects so that they'll be cataloged:
 
   >>> content = [
   ... Content(1, 'a', 'b', 'd'),
@@ -105,19 +108,19 @@ Now let's create some objects so that they'll be cataloged::
   ... Content(5, 'X', 'b', 'e'),
   ... Content(6, 'Y', 'Z')]
 
-And catalog them now::
+And catalog them now:
 
   >>> for entry in content:
   ...     catalog.index_doc(intid.register(entry), entry)
 
-Now let's register a query utility::
+Now let's register a query utility:
 
   >>> from hurry.query.query import Query
   >>> from hurry.query.interfaces import IQuery
   >>> provideUtility(Query(), IQuery)
 
 Set up some code to make querying and display the result
-easy::
+easy:
 
   >>> from zope.component import getUtility
   >>> from hurry.query.interfaces import IQuery
@@ -129,46 +132,46 @@ easy::
 FieldIndex Queries
 ------------------
 
-We can query for all objects indexed in this index::
+We can query for all objects indexed in this index:
 
   >>> from hurry.query import All
   >>> f1 = ('catalog1', 'f1')
   >>> displayQuery(All(f1))
   [1, 2, 3, 4, 5, 6]
 
-Now for a query where f1 equals a::
+Now for a query where f1 equals a:
 
   >>> from hurry.query import Eq
   >>> f1 = ('catalog1', 'f1')
   >>> displayQuery(Eq(f1, 'a'))
   [1, 2, 4]
 
-Not equals (this is more efficient than the generic ~ operator)::
+Not equals (this is more efficient than the generic ~ operator):
 
   >>> from hurry.query import NotEq
   >>> displayQuery(NotEq(f1, 'a'))
   [3, 5, 6]
 
-Testing whether a field is in a set::
+Testing whether a field is in a set:
 
   >>> from hurry.query import In
   >>> displayQuery(In(f1, ['a', 'X']))
   [1, 2, 3, 4, 5]
 
-Whether documents are in a specified range::
+Whether documents are in a specified range:
 
   >>> from hurry.query import Between
   >>> displayQuery(Between(f1, 'X', 'Y'))
   [3, 5, 6]
 
-You can leave out one end of the range::
+You can leave out one end of the range:
 
   >>> displayQuery(Between(f1, 'X', None)) # 'X' < 'a'
   [1, 2, 3, 4, 5, 6]
   >>> displayQuery(Between(f1, None, 'X'))
   [3, 5]
 
-You can also use greater-equals and lesser-equals for the same purpose::
+You can also use greater-equals and lesser-equals for the same purpose:
 
   >>> from hurry.query import Ge, Le
   >>> displayQuery(Ge(f1, 'X'))
@@ -176,35 +179,35 @@ You can also use greater-equals and lesser-equals for the same purpose::
   >>> displayQuery(Le(f1, 'X'))
   [3, 5]
 
-It's also possible to use not with the ~ operator::
+It's also possible to use not with the ~ operator:
 
   >>> displayQuery(~Eq(f1, 'a'))
   [3, 5, 6]
 
-Using and (&)::
+Using and (&):
 
   >>> f2 = ('catalog1', 'f2')
   >>> displayQuery(Eq(f1, 'a') & Eq(f2, 'b'))
   [1, 4]
 
-Using or (|)::
+Using or (|):
 
   >>> displayQuery(Eq(f1, 'a') | Eq(f2, 'b'))
   [1, 2, 4, 5]
 
-These can be chained::
+These can be chained:
 
   >>> displayQuery(Eq(f1, 'a') & Eq(f2, 'b') & Between(f1, 'a', 'b'))
   [1, 4]
   >>> displayQuery(Eq(f1, 'a') | Eq(f1, 'X') | Eq(f2, 'b'))
   [1, 2, 3, 4, 5]
 
-And nested::
+And nested:
 
   >>> displayQuery((Eq(f1, 'a') | Eq(f1, 'X')) & (Eq(f2, 'b') | Eq(f2, 'c')))
   [1, 2, 3, 4, 5]
 
-"and" and "or" can also be spelled differently::
+"and" and "or" can also be spelled differently:
 
   >>> from hurry.query import And, Or
   >>> displayQuery(And(Eq(f1, 'a'), Eq(f2, 'b')))
@@ -215,7 +218,7 @@ And nested::
 Combination of In and &
 -----------------------
 
-A combination of 'In' and '&'::
+A combination of 'In' and '&':
 
   >>> displayQuery(In(f1, ['a', 'X', 'Y', 'Z']))
   [1, 2, 3, 4, 5, 6]
@@ -232,7 +235,7 @@ The SetIndex is defined in zc.catalog.
 
   >>> from hurry.query import set
 
-Let's make a catalog which uses it::
+Let's make a catalog which uses it:
 
   >>> intid = DummyIntId()
   >>> provideUtility(intid, zope.intid.interfaces.IIntIds)
@@ -244,7 +247,7 @@ Let's make a catalog which uses it::
   >>> catalog['f1'] = SetIndex('f1', IContent)
   >>> catalog['f2'] = FieldIndex('f2', IContent)
 
-First let's set up some new data::
+First let's set up some new data:
 
   >>> content = [
   ... Content(1, ['a', 'b', 'c'], 1),
@@ -256,7 +259,7 @@ First let's set up some new data::
   ... Content(7, ['z'], 2),
   ... Content(8, [], 2)]  # no value, so not indexed.
 
-And catalog them now::
+And catalog them now:
 
   >>> for entry in content:
   ...     catalog.index_doc(intid.register(entry), entry)
@@ -267,7 +270,7 @@ We can query for all indexes objects:
   [1, 2, 3, 4, 5, 6, 7]
 
 Now do a a 'any of' query, which returns all documents that
-contain any of the values listed::
+contain any of the values listed:
 
   >>> displayQuery(set.AnyOf(f1, ['a', 'c']))
   [1, 2, 4, 5, 6]
@@ -277,7 +280,7 @@ contain any of the values listed::
   [1, 2, 6]
 
 Do a 'all of' query, which returns all documents that
-contain all of the values listed::
+contain all of the values listed:
 
   >>> displayQuery(set.AllOf(f1, ['a']))
   [1, 2, 6]
@@ -387,7 +390,7 @@ And catalog them now:
   >>> for entry in content:
   ...     catalog.index_doc(intid.register(entry), entry)
 
-We query for all indexes objects::
+We query for all indexes objects:
 
   >>> f1 = ('catalog1', 'f1')
   >>> displayQuery(value.All(f1))
@@ -494,7 +497,7 @@ Querying different indexes
 It's possible to specify the context when creating a query. This context
 determines which index will be searched.
 
-First setup a second registry and second catalog and populate it.
+First setup a second registry and second catalog and populate it:
 
   >>> catalog2 = Catalog()
   >>> from zope.interface.registry import Components
@@ -532,7 +535,7 @@ Now we can query this catalog by specifying the context:
 Sorting and limiting the results
 --------------------------------
 
-It's possible to have the resultset sorted on one of the fields in the query.
+It's possible to have the resultset sorted on one of the fields in the query:
 
   >>> catalog = Catalog()
   >>> provideUtility(catalog, ICatalog, 'catalog1')
@@ -540,7 +543,7 @@ It's possible to have the resultset sorted on one of the fields in the query.
   >>> catalog['f2'] = FieldIndex('f2', IContent)
   >>> catalog['t'] = TextIndex('t1', IContent)
 
-First let's set up some new data::
+First let's set up some new data:
 
   >>> content = [
   ... Content(1, 'a', 2, t1='Beautiful is better than ugly.'),
@@ -550,7 +553,7 @@ First let's set up some new data::
   ... Content(5, 'c', 7, t1='Readability counts'),
   ... Content(6, 'a', 1, t1='Although practicality beats purity')]
 
-And catalog them now::
+And catalog them now:
 
   >>> for entry in content:
   ...     catalog.index_doc(intid.register(entry), entry)
@@ -747,14 +750,14 @@ This can be used with a wrapper:
 Text index
 ----------
 
-You can search on text, here all the items that contains better::
+You can search on text, here all the items that contains better:
 
   >>> from hurry.query import Text
   >>> t1 = ('catalog1', 't')
   >>> displayResult(Text(t1, 'better'))
   [<Content "1">, <Content "2">, <Content "3">, <Content "4">]
 
-Invalid text query returns an empty results::
+Invalid text query returns an empty results:
 
   >>> displayResult(Text(t1, '?*'))
   []
@@ -764,7 +767,7 @@ Other terms
 -----------
 
 You can do differences, here all the items that contains better but do
-have a as f1::
+have a as f1:
 
   >>> from hurry.query import Difference
   >>> displayResult(Difference(Text(t1, 'better'), Eq(f1, 'a')))
@@ -772,13 +775,13 @@ have a as f1::
 
 
 There is a special term that allows to mix objects with catalog
-queries::
+queries:
 
   >>> from hurry.query import Objects
   >>> displayResult(Objects(content))
   [<Content "1">, <Content "2">, <Content "3">, <Content "4">, <Content "5">, <Content "6">]
 
-There is a special term that allows querying objects by intid::
+There is a special term that allows querying objects by intid:
 
   >>> from hurry.query import Ids
   >>> displayResult(Ids())

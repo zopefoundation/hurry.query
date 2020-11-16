@@ -31,6 +31,7 @@ def read(*rnames):
         text = html.escape(text)
     return text
 
+
 tests_require = [
     'testfixtures',
     'zope.container',
@@ -42,7 +43,7 @@ setup(
     author='Infrae',
     author_email='faassen@startifact.com',
     description="Higher level query system for the zope.catalog",
-    long_description=(read('src', 'hurry', 'query', 'query.txt') +
+    long_description=(read('README.txt') +
                       '\n\n' +
                       read('CHANGES.txt')),
     license='ZPL 2.1',
