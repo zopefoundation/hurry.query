@@ -22,6 +22,7 @@ import itertools
 import logging
 import os
 import time
+import six
 
 from BTrees.IFBTree import IFSet
 from BTrees.IFBTree import weightedIntersection
@@ -46,6 +47,11 @@ if 'HURRY_QUERY_TIMING' in os.environ:
         HURRY_QUERY_TIMING = float(os.environ['HURRY_QUERY_TIMING'])
     except (ValueError, TypeError):
         pass
+
+if six.PY3:
+    _perf_counter = time.perf_counter
+else:
+    _perf_counter = time.clock
 
 
 class Locator(object):
@@ -123,13 +129,13 @@ class Timing(object):
 
     def __init__(self, key=None, order=0):
         self.key = key
-        self.start = time.perf_counter()
+        self.start = _perf_counter()
         self.start_order = order
         self.end = None
         self.end_order = None
 
     def done(self, order=0):
-        self.end = time.perf_counter()
+        self.end = _perf_counter()
         self.end_order = order
 
     @property
