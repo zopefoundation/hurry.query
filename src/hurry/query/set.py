@@ -23,7 +23,7 @@ from hurry.query import query
 class SetTerm(query.IndexTerm):
 
     def getIndex(self, context):
-        index = super(SetTerm, self).getIndex(context)
+        index = super().getIndex(context)
         assert ISetIndex.providedBy(index)
         return index
 
@@ -40,7 +40,7 @@ class All(SetTerm):
 class AnyOf(SetTerm):
 
     def __init__(self, index_id, values):
-        super(AnyOf, self).__init__(index_id)
+        super().__init__(index_id)
         self.values = tuple(values)
 
     def apply(self, cache, context=None):
@@ -53,7 +53,7 @@ class AnyOf(SetTerm):
 class AllOf(SetTerm):
 
     def __init__(self, index_id, values):
-        super(AllOf, self).__init__(index_id)
+        super().__init__(index_id)
         self.values = tuple(values)
 
     def apply(self, cache, context=None):
@@ -68,7 +68,7 @@ class SetBetween(SetTerm):
     def __init__(self, index_id,
                  minimum=None, maximum=None,
                  exclude_min=False, exclude_max=False):
-        super(SetBetween, self).__init__(index_id)
+        super().__init__(index_id)
         self.options = (minimum, maximum, exclude_min, exclude_max)
 
     def apply(self, cache, context=None):
@@ -82,7 +82,7 @@ class ExtentAny(SetTerm):
     """Any ids in the extent that are indexed by this index."""
 
     def __init__(self, index_id, extent):
-        super(ExtentAny, self).__init__(index_id)
+        super().__init__(index_id)
         self.extent = extent
 
     def apply(self, cache, context=None):
@@ -93,7 +93,7 @@ class ExtentNone(SetTerm):
     """Any ids in the extent that are not indexed by this index."""
 
     def __init__(self, index_id, extent):
-        super(ExtentNone, self).__init__(index_id)
+        super().__init__(index_id)
         self.extent = extent
 
     def apply(self, cache, context=None):

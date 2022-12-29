@@ -11,10 +11,6 @@
 # FOR A PARTICULAR PURPOSE.
 #
 ##############################################################################
-"""Setup
-
-$Id$
-"""
 import html
 import os
 
@@ -73,7 +69,6 @@ setup(
     zip_safe=False,
     install_requires=[
         'BTrees',
-        'six',
         'setuptools',
         'transaction',
         'zc.catalog',

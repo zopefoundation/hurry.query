@@ -52,11 +52,11 @@ class Content(Contained):
         return self.id == other.id
 
     def __repr__(self):
-        return '<Content "{}">'.format(self.id)
+        return f'<Content "{self.id}">'
 
 
 @implementer(zope.intid.interfaces.IIntIds)
-class DummyIntId(object):
+class DummyIntId:
     MARKER = '__dummy_int_id__'
 
     def __init__(self):
@@ -310,7 +310,7 @@ class TimingAwareCacheTest(QueryTestBase):
 class QueryTest(QueryTestBase):
 
     def test_injected_caching(self):
-        class MockCaching(object):
+        class MockCaching:
             _cache = dict()
             _get = 0
             _set = 0
