@@ -11,25 +11,16 @@
 # FOR A PARTICULAR PURPOSE.
 #
 ##############################################################################
-"""Setup
-
-$Id$
-"""
+import html
 import os
-import sys
-from setuptools import setup, find_packages
 
-if sys.version_info.major > 2:
-    import html
+from setuptools import find_packages
+from setuptools import setup
 
 
 def read(*rnames):
     text = open(os.path.join(os.path.dirname(__file__), *rnames)).read()
-    if sys.version_info.major == 2:
-        text = unicode(text, 'utf-8').encode('ascii', 'xmlcharrefreplace')
-    else:
-        text = html.escape(text)
-    return text
+    return html.escape(text)
 
 
 tests_require = [
@@ -39,7 +30,7 @@ tests_require = [
 
 setup(
     name="hurry.query",
-    version='3.3.dev0',
+    version='4.0.dev0',
     author='Infrae',
     author_email='faassen@startifact.com',
     description="Higher level query system for the zope.catalog",
@@ -57,17 +48,17 @@ setup(
         'Intended Audience :: Developers',
         'License :: OSI Approved :: Zope Public License',
         'Programming Language :: Python',
-        'Programming Language :: Python :: 2',
-        'Programming Language :: Python :: 2.7',
         'Programming Language :: Python :: 3',
-        'Programming Language :: Python :: 3.5',
-        'Programming Language :: Python :: 3.6',
         'Programming Language :: Python :: 3.7',
         'Programming Language :: Python :: 3.8',
+        'Programming Language :: Python :: 3.9',
+        'Programming Language :: Python :: 3.10',
+        'Programming Language :: Python :: 3.11',
         'Programming Language :: Python :: Implementation',
         'Programming Language :: Python :: Implementation :: CPython',
         'Programming Language :: Python :: Implementation :: PyPy',
-        'Framework :: Zope :: 3'],
+        'Framework :: Zope :: 3',
+    ],
     url='http://pypi.python.org/pypi/hurry.query',
     packages=find_packages('src'),
     package_dir={'': 'src'},
@@ -78,7 +69,6 @@ setup(
     zip_safe=False,
     install_requires=[
         'BTrees',
-        'six',
         'setuptools',
         'transaction',
         'zc.catalog',

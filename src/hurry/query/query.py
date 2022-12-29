@@ -16,27 +16,31 @@
 This module contains an IQuery utility implementation, basic query term
 implementations and concrete term implementations for zope.catalog indexes.
 
-$Id$
 """
 import itertools
 import logging
 import os
 import time
-import six
 
 from BTrees.IFBTree import IFSet
+from BTrees.IFBTree import difference
+from BTrees.IFBTree import intersection
+from BTrees.IFBTree import multiunion
 from BTrees.IFBTree import weightedIntersection
-from BTrees.IFBTree import multiunion, difference, intersection
 from zope.cachedescriptors.property import Lazy
 from zope.catalog.field import IFieldIndex
 from zope.catalog.interfaces import ICatalog
 from zope.catalog.text import ITextIndex
-from zope.component import getUtility, getSiteManager, IComponentLookup
-from zope.interface import implementer
-from zope.intid.interfaces import IIntIds
+from zope.component import IComponentLookup
+from zope.component import getSiteManager
+from zope.component import getUtility
 from zope.index.interfaces import IIndexSort
 from zope.index.text.parsetree import ParseError
-from zope.location.location import located, LocationProxy
+from zope.interface import implementer
+from zope.intid.interfaces import IIntIds
+from zope.location.location import LocationProxy
+from zope.location.location import located
+
 from hurry.query import interfaces
 
 
@@ -48,13 +52,10 @@ if 'HURRY_QUERY_TIMING' in os.environ:
     except (ValueError, TypeError):
         pass
 
-if six.PY3:
-    _perf_counter = time.perf_counter
-else:
-    _perf_counter = time.clock
+_perf_counter = time.perf_counter
 
 
-class Locator(object):
+class Locator:
 
     def __init__(self, container, get):
         self.container = container
@@ -67,7 +68,7 @@ class Locator(object):
 
 
 @implementer(interfaces.IResults)
-class Results(object):
+class Results:
 
     def __init__(self, context, all_results, selected_results,
                  wrapper=None, locate_to=None):
@@ -107,7 +108,7 @@ class Results(object):
 
 
 @implementer(interfaces.IResults)
-class NoResults(object):
+class NoResults:
 
     count = 0
     total = 0
@@ -125,7 +126,7 @@ class NoResults(object):
 no_results = NoResults()
 
 
-class Timing(object):
+class Timing:
 
     def __init__(self, key=None, order=0):
         self.key = key
@@ -145,7 +146,7 @@ class Timing(object):
         return None
 
 
-class TimingAwareCache(object):
+class TimingAwareCache:
 
     def __init__(self, cache):
         self.cache = cache
@@ -190,7 +191,7 @@ class TimingAwareCache(object):
             if order == [] or timing.start_order < order[-1]:
                 indent += 4
                 order.append(timing.end_order)
-            total = timing.total and '{:.4f}s'.format(timing.total) or '?'
+            total = timing.total and f'{timing.total:.4f}s' or '?'
             logger.info(
                 '{} {}: {}.'.format(
                     ' ' * indent, total, str(timing.key)))
@@ -201,7 +202,7 @@ class TimingAwareCache(object):
 
 
 @implementer(interfaces.IQuery)
-class Query(object):
+class Query:
 
     def searchResults(
             self, query, context=None, sort_field=None, limit=None,
@@ -284,7 +285,7 @@ class Query(object):
 
 
 @implementer(interfaces.ITerm)
-class Term(object):
+class Term:
 
     def key(self, context=None):
         raise NotImplementedError()
@@ -478,11 +479,11 @@ class IndexTerm(Term):
 class Text(IndexTerm):
 
     def __init__(self, index_id, text):
-        super(Text, self).__init__(index_id)
+        super().__init__(index_id)
         self.text = text
 
     def getIndex(self, context):
-        index = super(Text, self).getIndex(context)
+        index = super().getIndex(context)
         assert ITextIndex.providedBy(index)
         return index
 
@@ -492,7 +493,7 @@ class Text(IndexTerm):
             return index.apply(self.text)
         except ParseError:
             logger.error(
-                'search text "{}" yielded a ParseError'.format(self.text))
+                f'search text "{self.text}" yielded a ParseError')
             return IFSet()
 
     def key(self, context=None):
@@ -502,7 +503,7 @@ class Text(IndexTerm):
 class FieldTerm(IndexTerm):
 
     def getIndex(self, context):
-        index = super(FieldTerm, self).getIndex(context)
+        index = super().getIndex(context)
         assert IFieldIndex.providedBy(index)
         return index
 
@@ -511,7 +512,7 @@ class Eq(FieldTerm):
 
     def __init__(self, index_id, value):
         assert value is not None
-        super(Eq, self).__init__(index_id)
+        super().__init__(index_id)
         self.value = value
 
     def apply(self, cache, context=None):
@@ -524,7 +525,7 @@ class Eq(FieldTerm):
 class NotEq(FieldTerm):
 
     def __init__(self, index_id, value):
-        super(NotEq, self).__init__(index_id)
+        super().__init__(index_id)
         self.value = value
 
     def apply(self, cache, context=None):
@@ -550,7 +551,7 @@ class Between(FieldTerm):
 
     def __init__(self, index_id,
                  minimum=None, maximum=None):
-        super(Between, self).__init__(index_id)
+        super().__init__(index_id)
         self.options = (minimum, maximum)
 
     def apply(self, cache, context=None):
@@ -563,20 +564,20 @@ class Between(FieldTerm):
 class Ge(Between):
 
     def __init__(self, index_id, min_value):
-        super(Ge, self).__init__(index_id, min_value, None)
+        super().__init__(index_id, min_value, None)
 
 
 class Le(Between):
 
     def __init__(self, index_id, max_value):
-        super(Le, self).__init__(index_id, None, max_value)
+        super().__init__(index_id, None, max_value)
 
 
 class In(FieldTerm):
 
     def __init__(self, index_id, values):
         assert None not in values
-        super(In, self).__init__(index_id)
+        super().__init__(index_id)
         self.values = tuple(values)
 
     def apply(self, cache, context=None):

@@ -1,0 +1,29 @@
+# Generated from:
+# https://github.com/zopefoundation/meta/tree/master/config/pure-python
+[meta]
+template = "pure-python"
+commit-id = "b2749126"
+
+[python]
+with-macos = false
+with-windows = false
+with-pypy = true
+with-future-python = false
+with-sphinx-doctests = false
+
+[tox]
+use-flake8 = true
+testenv-deps = [
+    "zope.testrunner",
+    ]
+
+[coverage]
+fail-under = 98.5
+
+[flake8]
+additional-config = [
+    "# F401 imported but unused",
+    "per-file-ignores =",
+    "    src/hurry/query/__init__.py: F401",
+    "    src/hurry/query/tests/__init__.py: F401",
+    ]
