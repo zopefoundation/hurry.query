@@ -1,17 +1,20 @@
 import functools
 import time
 import unittest
+
 import zope.component.testing
 import zope.intid.interfaces
-
 from testfixtures import LogCapture
 from zope.catalog.catalog import Catalog
 from zope.catalog.field import FieldIndex
 from zope.catalog.interfaces import ICatalog
 from zope.catalog.text import TextIndex
-from zope.component import provideUtility, getUtility
+from zope.component import getUtility
+from zope.component import provideUtility
 from zope.container.contained import Contained
-from zope.interface import Interface, Attribute, implementer
+from zope.interface import Attribute
+from zope.interface import Interface
+from zope.interface import implementer
 
 from hurry.query import query
 from hurry.query.interfaces import IQuery

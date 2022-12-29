@@ -4,7 +4,7 @@ CHANGES
 3.3 (unreleased)
 ----------------
 
-- Nothing changed yet.
+- Add support for Python 3.9, 3.10, 3.11.
 
 
 3.2 (2020-11-16)

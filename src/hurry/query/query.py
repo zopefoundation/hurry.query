@@ -22,21 +22,28 @@ import itertools
 import logging
 import os
 import time
+
 import six
 
 from BTrees.IFBTree import IFSet
+from BTrees.IFBTree import difference
+from BTrees.IFBTree import intersection
+from BTrees.IFBTree import multiunion
 from BTrees.IFBTree import weightedIntersection
-from BTrees.IFBTree import multiunion, difference, intersection
 from zope.cachedescriptors.property import Lazy
 from zope.catalog.field import IFieldIndex
 from zope.catalog.interfaces import ICatalog
 from zope.catalog.text import ITextIndex
-from zope.component import getUtility, getSiteManager, IComponentLookup
-from zope.interface import implementer
-from zope.intid.interfaces import IIntIds
+from zope.component import IComponentLookup
+from zope.component import getSiteManager
+from zope.component import getUtility
 from zope.index.interfaces import IIndexSort
 from zope.index.text.parsetree import ParseError
-from zope.location.location import located, LocationProxy
+from zope.interface import implementer
+from zope.intid.interfaces import IIntIds
+from zope.location.location import LocationProxy
+from zope.location.location import located
+
 from hurry.query import interfaces
 
 

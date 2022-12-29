@@ -11,9 +11,17 @@
 # FOR A PARTICULAR PURPOSE.
 #
 ##############################################################################
-"""
-$Id$
-"""
-from hurry.query.query import All, And, Or, Eq, NotEq, Difference, Objects, Ids
-from hurry.query.query import Between, In, Ge, Le, Text
+from hurry.query.query import All
+from hurry.query.query import And
+from hurry.query.query import Between
+from hurry.query.query import Difference
+from hurry.query.query import Eq
+from hurry.query.query import Ge
+from hurry.query.query import Ids
+from hurry.query.query import In
+from hurry.query.query import Le
+from hurry.query.query import NotEq
+from hurry.query.query import Objects
+from hurry.query.query import Or
+from hurry.query.query import Text
 from hurry.query.query import no_results
