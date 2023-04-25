@@ -19,7 +19,8 @@ from setuptools import setup
 
 
 def read(*rnames):
-    text = open(os.path.join(os.path.dirname(__file__), *rnames)).read()
+    with open(os.path.join(os.path.dirname(__file__), *rnames)) as f:
+        text = f.read()
     return html.escape(text)
 
 
@@ -32,11 +33,11 @@ setup(
     name="hurry.query",
     version='4.0.dev0',
     author='Infrae',
-    author_email='faassen@startifact.com',
-    description="Higher level query system for the zope.catalog",
-    long_description=(read('README.txt') +
+    author_email='zope-dev@zope.dev',
+    description="Higher level query system for zope.catalog.",
+    long_description=(read('README.rst') +
                       '\n\n' +
-                      read('CHANGES.txt')),
+                      read('CHANGES.rst')),
     license='ZPL 2.1',
     keywords="zope zope3 catalog index query",
     classifiers=[
@@ -59,7 +60,7 @@ setup(
         'Programming Language :: Python :: Implementation :: PyPy',
         'Framework :: Zope :: 3',
     ],
-    url='http://pypi.python.org/pypi/hurry.query',
+    url='https://github.com/zopefoundation/hurry.query',
     packages=find_packages('src'),
     package_dir={'': 'src'},
     namespace_packages=['hurry'],
@@ -67,6 +68,7 @@ setup(
         '': ['*.txt', '*.zcml'],
     },
     zip_safe=False,
+    python_requires='>=3.7',
     install_requires=[
         'BTrees',
         'setuptools',
@@ -80,6 +82,5 @@ setup(
         'zope.intid',
         'zope.location',
     ],
-    tests_require=tests_require,
     extras_require={'test': tests_require},
     )

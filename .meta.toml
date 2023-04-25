@@ -2,7 +2,7 @@
 # https://github.com/zopefoundation/meta/tree/master/config/pure-python
 [meta]
 template = "pure-python"
-commit-id = "b2749126"
+commit-id = "fe63cb4c"
 
 [python]
 with-macos = false
@@ -19,6 +19,11 @@ testenv-deps = [
 
 [coverage]
 fail-under = 98.5
+
+[manifest]
+additional-rules = [
+    "recursive-include src *.rst",
+    ]
 
 [flake8]
 additional-config = [

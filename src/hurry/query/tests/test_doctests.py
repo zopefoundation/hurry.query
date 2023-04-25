@@ -1,8 +1,5 @@
 import doctest
-import unittest
 
 
 def test_suite():
-    return unittest.TestSuite((
-        doctest.DocFileSuite('../query.txt'),
-        ))
+    return doctest.DocFileSuite('../query.rst')
