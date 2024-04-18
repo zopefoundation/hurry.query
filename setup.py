@@ -35,6 +35,7 @@ setup(
     author='Infrae',
     author_email='zope-dev@zope.dev',
     description="Higher level query system for zope.catalog.",
+    url="https://github.com/zopefoundation/hurry.query",
     long_description=(read('README.rst') +
                       '\n\n' +
                       read('CHANGES.rst')),
