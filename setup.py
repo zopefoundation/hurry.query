@@ -61,7 +61,6 @@ setup(
         'Programming Language :: Python :: Implementation :: PyPy',
         'Framework :: Zope :: 3',
     ],
-    url='https://github.com/zopefoundation/hurry.query',
     packages=find_packages('src'),
     package_dir={'': 'src'},
     namespace_packages=['hurry'],
