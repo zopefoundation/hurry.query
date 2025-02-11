@@ -183,40 +183,40 @@ class TimingAwareCacheTest(QueryTestBase):
 
     def test_get_uncached(self):
         cache = query.TimingAwareCache({})
-        self.assertFalse('foo' in cache.timing)
+        self.assertNotIn('foo', cache.timing)
         self.assertEqual(cache.count, 0)
         value = cache.get('foo')
         self.assertEqual(value, None)
-        self.assertTrue('foo' in cache.timing)
+        self.assertIn('foo', cache.timing)
         self.assertGreater(cache.timing['foo'].start, 0)
         self.assertEqual(cache.timing['foo'].end, None)
         self.assertEqual(cache.count, 1)
 
     def test_get_cached(self):
         cache = query.TimingAwareCache({'foo': 'bar'})
-        self.assertFalse('foo' in cache.timing)
+        self.assertNotIn('foo', cache.timing)
         self.assertEqual(cache.count, 0)
         value = cache.get('foo')
         self.assertEqual(value, 'bar')
-        self.assertFalse('foo' in cache.timing)
+        self.assertNotIn('foo', cache.timing)
         self.assertEqual(cache.count, 0)
 
     def test_dunder_setitem(self):
         cache = query.TimingAwareCache({})
-        self.assertFalse('foo' in cache.timing)
+        self.assertNotIn('foo', cache.timing)
         self.assertEqual(cache.count, 0)
         cache['foo'] = 'bar'
-        self.assertFalse('foo' in cache.timing)
+        self.assertNotIn('foo', cache.timing)
         self.assertEqual(cache.count, 0)
 
     def test_dunder_setitem_timing(self):
         cache = query.TimingAwareCache({})
-        self.assertFalse('foo' in cache.timing)
+        self.assertNotIn('foo', cache.timing)
         self.assertEqual(cache.count, 0)
         cache.get('foo')
         self.assertEqual(cache.count, 1)
         cache['foo'] = 'bar'
-        self.assertTrue('foo' in cache.timing)
+        self.assertIn('foo', cache.timing)
         self.assertGreater(cache.timing['foo'].start, 0)
         self.assertGreater(cache.timing['foo'].end, 0)
         self.assertEqual(cache.count, 2)
