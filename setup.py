@@ -14,7 +14,6 @@
 import html
 import os
 
-from setuptools import find_packages
 from setuptools import setup
 
 
@@ -61,9 +60,8 @@ setup(
         'Programming Language :: Python :: Implementation :: PyPy',
         'Framework :: Zope :: 3',
     ],
-    packages=find_packages('src'),
     package_dir={'': 'src'},
-    namespace_packages=['hurry'],
+    packages=['hurry.query'],
     package_data={
         '': ['*.txt', '*.zcml'],
     },
