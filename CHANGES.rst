@@ -6,6 +6,9 @@ CHANGES
 
 - Drop support for pkg_resources namespace and replace it with PEP 420 native namespace.
 
+- Add support for Python 3.12, 3.13.
+
+- Drop support for Python 3.7, 3.8.
 
 4.0 (2023-05-04)
 ----------------

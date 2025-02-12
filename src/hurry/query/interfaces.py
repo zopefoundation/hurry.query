@@ -23,7 +23,6 @@ class IQuery(Interface):
     def searchResults(
             query, context=None, sort_field=None, limit=None, reverse=False,
             start=0, caching=False):
-
         """Query indexes.
 
         The query argument is a query composed of terms. Optionally
