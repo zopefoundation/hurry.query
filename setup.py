@@ -14,7 +14,7 @@
 import html
 import os
 
-from setuptools import find_packages
+from setuptools import find_namespace_packages
 from setuptools import setup
 
 
@@ -31,7 +31,7 @@ tests_require = [
 
 setup(
     name="hurry.query",
-    version='4.1.dev0',
+    version='5.0.dev0',
     author='Infrae',
     author_email='zope-dev@zope.dev',
     description="Higher level query system for zope.catalog.",
@@ -61,9 +61,8 @@ setup(
         'Programming Language :: Python :: Implementation :: PyPy',
         'Framework :: Zope :: 3',
     ],
-    packages=find_packages('src'),
+    packages=find_namespace_packages('src'),
     package_dir={'': 'src'},
-    namespace_packages=['hurry'],
     package_data={
         '': ['*.txt', '*.zcml'],
     },
