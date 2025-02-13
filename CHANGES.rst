@@ -4,13 +4,14 @@ CHANGES
 5.1 (unreleased)
 ----------------
 
-- Nothing changed yet.
+- Simplify usage of PEP-420 namespace.
 
 
 5.0 (2025-02-12)
 ----------------
 
-- Drop support for pkg_resources namespace and replace it with PEP 420 native namespace.
+- Drop support for ``pkg_resources`` namespace and replace it with PEP 420
+  native namespace.
 
 - Add support for Python 3.12, 3.13.
 
