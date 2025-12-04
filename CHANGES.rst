@@ -4,6 +4,8 @@ CHANGES
 5.1 (unreleased)
 ----------------
 
+- Drop support for Python 3.9.
+
 - Simplify usage of PEP-420 namespace.
 
 
