@@ -1,8 +1,8 @@
-# Generated from:
-# https://github.com/zopefoundation/meta/tree/master/config/pure-python
+# Generated with zope.meta (https://zopemeta.readthedocs.io/) from:
+# https://github.com/zopefoundation/meta/tree/master/src/zope/meta/pure-python
 [meta]
 template = "pure-python"
-commit-id = "82ed9fd9"
+commit-id = "76e81852"
 
 [python]
 with-macos = false
@@ -13,18 +13,13 @@ with-sphinx-doctests = false
 with-docs = false
 
 [tox]
-use-flake8 = true
-testenv-deps = [
-    "zope.testrunner",
-    ]
+testenv-deps = ["zope.testrunner"]
 
 [coverage]
 fail-under = 98.5
 
 [manifest]
-additional-rules = [
-    "recursive-include src *.rst",
-    ]
+additional-rules = ["recursive-include src *.rst"]
 
 [flake8]
 additional-config = [
@@ -32,4 +27,4 @@ additional-config = [
     "per-file-ignores =",
     "    src/hurry/query/__init__.py: F401",
     "    src/hurry/query/tests/__init__.py: F401",
-    ]
+]
