@@ -10,6 +10,11 @@ CHANGES
 
 - Simplify usage of PEP-420 namespace.
 
+- Do not allow any other values but True or False for exclude_min and
+  exclude_max arguments to the Between() term and SetBetween() term. It used to
+  be possible to pass None for example, and this would raise a TypeError in the
+  BTrees implementation. This TypeError however is silently ignored in
+  zc.catalog.index and an empty result set is returned instead.
 
 5.0 (2025-02-12)
 ----------------

@@ -79,6 +79,10 @@ class Between(ValueTerm):
     def __init__(self, index_id, min_value=None, max_value=None,
                  exclude_min=False, exclude_max=False):
         super().__init__(index_id)
+        if exclude_min not in {True, False}:
+            raise ValueError("Use a boolean for exclude_min")
+        if exclude_max not in {True, False}:
+            raise ValueError("Use a boolean for exclude_max")
         self.options = (min_value, max_value, exclude_min, exclude_max)
 
     def apply(self, cache, context=None):

@@ -313,6 +313,18 @@ You can also leave out one end of the range:
   >>> displayQuery(set.SetBetween(f1, None, 'c', exclude_max=True))
   [1, 2, 3, 5, 6]
 
+You can only pass True or False to the exclude_min and exclude_max parameters:
+
+  >>> displayQuery(set.SetBetween(f1, 'a', 'c', exclude_min=None))
+  Traceback (most recent call last):
+  ...
+  ValueError: Use a boolean for exclude_min
+
+  >>> displayQuery(set.SetBetween(f1, 'a', 'c', exclude_max=None))
+  Traceback (most recent call last):
+  ...
+  ValueError: Use a boolean for exclude_max
+
 You can chain set queries:
 
   >>> displayQuery(set.AnyOf(f1, ['a']) & Eq(f2, 1))
@@ -443,6 +455,18 @@ You can also leave out one end of the range:
   [3, 4, 5]
   >>> displayQuery(value.Between(f1, None, 'c'))
   [1, 2, 3, 5, 6]
+
+You can only pass True or False to the exclude_min and exclude_max parameters:
+
+  >>> displayQuery(value.Between(f1, 'a', 'c', exclude_min=None))
+  Traceback (most recent call last):
+  ...
+  ValueError: Use a boolean for exclude_min
+
+  >>> displayQuery(value.Between(f1, 'a', 'c', exclude_max=None))
+  Traceback (most recent call last):
+  ...
+  ValueError: Use a boolean for exclude_max
 
 You can also use greater-equals and lesser-equals for the same purpose:
 
