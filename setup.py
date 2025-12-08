@@ -30,7 +30,7 @@ tests_require = [
 
 setup(
     name="hurry.query",
-    version='5.1',
+    version='5.2.dev0',
     author='Infrae',
     author_email='zope-dev@zope.dev',
     description="Higher level query system for zope.catalog.",
