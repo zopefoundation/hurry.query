@@ -7,6 +7,3 @@ install it (by re-running buildout, for instance).
 You can include hurry.query's ZCML via::
 
   <include package="hurry.query" />
-
-
-
